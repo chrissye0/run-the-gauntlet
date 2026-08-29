@@ -6,9 +6,6 @@
 # See: https://github.com/github/gitignore/tree/main/Global
 #
 
-# NODE
-node_modules
-
 .utmp/
 /[Ll]ibrary/
 /[Tt]emp/
