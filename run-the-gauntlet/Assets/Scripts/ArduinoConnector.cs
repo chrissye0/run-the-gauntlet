@@ -32,9 +32,13 @@ public class ArduinoConnector : MonoBehaviour
     // threshold for default accelX (rest state)
     public float accelXRestThreshold = 0.3f;
 
+    // recording accelX peaks (updated in punchDetection)
     private float accelYPeak = 0f;
+    // threshold for when accelY peaks (the sideways hook motion) - will use absolute value for readings to account for left and right hooks
     public float accelYPunchThreshold = 1.2f;
+    // threshold for when accelY returns (it's like this because of absolute value and game mistaking hooks for uppercuts) (tweak this probably)
     public float accelYReturnThreshold = 1.5f;
+    // // threshold for default accelY (rest state)
     public float accelYRestThreshold = 0.3f;
 
     // accelZ detection (FOR UPPERCUTS)
@@ -55,8 +59,11 @@ public class ArduinoConnector : MonoBehaviour
     // maximum gyroX value (updated in punchDetection)
     private float gyroXMax = 0f;
 
+    // gyroY detection (FOR HOOKS)
     public float gyroYPunchThreshold = 400f;
+    // minimum gyroY value (updated in punchDetection)
     private float gyroYMin = 0f;
+    // maximum gyroY value (updated in punchDetection)
     private float gyroYMax = 0f;
 
     void Start()
@@ -104,13 +111,14 @@ public class ArduinoConnector : MonoBehaviour
             case PunchState.Waiting:
                 if (accelX > accelXPunchThreshold)
                 {
-                    // Initialize values
+                    // initialize values
                     accelXPeak = accelX;
                     // if uppercut motion (hand goes up)
                     if (accelZ > accelZPunchThreshold)
                     {
                         accelZPeak = accelZ;
                     }
+                    // if hook motion (either left or right hand goes sideways)
                     if (Mathf.Abs(accelY) > accelYPunchThreshold)
                     {
                         accelYPeak = Mathf.Abs(accelY);
@@ -130,6 +138,7 @@ public class ArduinoConnector : MonoBehaviour
                 {
                     accelXPeak = accelX;
                 }
+                // track absolute value of accelY peak
                 if (Mathf.Abs(accelY) > accelYPeak)
                 {
                     accelYPeak = Mathf.Abs(accelY);
@@ -162,6 +171,7 @@ public class ArduinoConnector : MonoBehaviour
                 {
                     // get gyroX range for cross detection (because it's a range, it'll work for both left and right crosses)
                     float gyroXRange = gyroXMax - gyroXMin;
+                    // same for gyroY and hook detection
                     float gyroYRange = gyroYMax - gyroYMin;
                     // determine punch type
                     if (gyroXRange > gyroXPunchThreshold)
@@ -170,13 +180,13 @@ public class ArduinoConnector : MonoBehaviour
                         Debug.Log("CROSS DETECTED!");
                     }
                     else
-                    {
-                        Debug.Log("accelY: " + accelY + "| gyroY: " + gyroY);
+                    { // if no gyroX fluctuation
+                        //Debug.Log("accelY: " + accelY + " | gyroY: " + gyroY);
                         if (Mathf.Abs(accelY) > accelYReturnThreshold && gyroYRange > gyroYPunchThreshold)
                         {
+                            // if accelY and gyroY fluctuation (hook)
                             Debug.Log("HOOK DETECTED!");
                         }
-                        // if no gyroX fluctuation
                         else if (accelZ < accelZReturnThreshold)
                         {
                             // if accelZ fluctuation (uppercut)
