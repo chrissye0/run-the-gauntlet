@@ -7,7 +7,7 @@ public class ArduinoConnector : MonoBehaviour
     private SerialPort serial = new SerialPort("COM6", 115200);
 
     // time in between punches
-    public float punchCooldown = 0.3f;
+    public float punchCooldown = 0.1f;
     // to track time that has passed
     private float punchCooldownTimer = 0f;
 
@@ -32,6 +32,11 @@ public class ArduinoConnector : MonoBehaviour
     // threshold for default accelX (rest state)
     public float accelXRestThreshold = 0.3f;
 
+    private float accelYPeak = 0f;
+    public float accelYPunchThreshold = 1.2f;
+    public float accelYReturnThreshold = 1.5f;
+    public float accelYRestThreshold = 0.3f;
+
     // accelZ detection (FOR UPPERCUTS)
     // recording accelZ peaks (updated in punchDetection)
     private float accelZPeak = 0f;
@@ -49,6 +54,10 @@ public class ArduinoConnector : MonoBehaviour
     private float gyroXMin = 0f;
     // maximum gyroX value (updated in punchDetection)
     private float gyroXMax = 0f;
+
+    public float gyroYPunchThreshold = 400f;
+    private float gyroYMin = 0f;
+    private float gyroYMax = 0f;
 
     void Start()
     {
@@ -78,8 +87,8 @@ public class ArduinoConnector : MonoBehaviour
         if (!float.TryParse(values[4], out float gyroX)) return;
         if (!float.TryParse(values[5], out float gyroY)) return;
         if (!float.TryParse(values[6], out float gyroZ)) return;
-
-        DetectPunch(accelX, accelZ, accelZ, gyroX, gyroZ);
+        //Debug.Log(accelY);
+        DetectPunch(accelX, accelZ, accelZ, gyroX, gyroY);
     }
 
     /**
@@ -87,7 +96,7 @@ public class ArduinoConnector : MonoBehaviour
      * take in all needed values for jab, cross, hook, and uppercut
      * use a switch statement and PunchState states to differentiate
      */
-    private void DetectPunch(float accelX, float accelY, float accelZ, float gyroX, float gyroZ)
+    private void DetectPunch(float accelX, float accelY, float accelZ, float gyroX, float gyroY)
     {
         switch (punchState)
         {
@@ -102,8 +111,14 @@ public class ArduinoConnector : MonoBehaviour
                     {
                         accelZPeak = accelZ;
                     }
+                    if (Mathf.Abs(accelY) > accelYPunchThreshold)
+                    {
+                        accelYPeak = Mathf.Abs(accelY);
+                    }
                     gyroXMin = gyroX;
                     gyroXMax = gyroX;
+                    gyroYMin = gyroY;
+                    gyroYMax = gyroY;
                     // go into detecting punch state
                     punchState = PunchState.DetectingPunch;
                 }
@@ -114,6 +129,10 @@ public class ArduinoConnector : MonoBehaviour
                 if (accelX > accelXPeak)
                 {
                     accelXPeak = accelX;
+                }
+                if (Mathf.Abs(accelY) > accelYPeak)
+                {
+                    accelYPeak = Mathf.Abs(accelY);
                 }
                 // track accelZ peak
                 if (accelZ > accelZPeak)
@@ -129,11 +148,21 @@ public class ArduinoConnector : MonoBehaviour
                 {
                     gyroXMax = gyroX;
                 }
+                // track gyroY range
+                if (gyroY < gyroXMin)
+                {
+                    gyroYMin = gyroY;
+                }
+                if (gyroY > gyroXMax)
+                {
+                    gyroYMax = gyroY;
+                }
                 // punch ends when accelX goes negative
                 if (accelX < accelXReturnThreshold)
                 {
                     // get gyroX range for cross detection (because it's a range, it'll work for both left and right crosses)
                     float gyroXRange = gyroXMax - gyroXMin;
+                    float gyroYRange = gyroYMax - gyroYMin;
                     // determine punch type
                     if (gyroXRange > gyroXPunchThreshold)
                     {
@@ -142,8 +171,13 @@ public class ArduinoConnector : MonoBehaviour
                     }
                     else
                     {
+                        Debug.Log("accelY: " + accelY + "| gyroY: " + gyroY);
+                        if (Mathf.Abs(accelY) > accelYReturnThreshold && gyroYRange > gyroYPunchThreshold)
+                        {
+                            Debug.Log("HOOK DETECTED!");
+                        }
                         // if no gyroX fluctuation
-                        if (accelZ < accelZReturnThreshold)
+                        else if (accelZ < accelZReturnThreshold)
                         {
                             // if accelZ fluctuation (uppercut)
                             Debug.Log("UPPERCUT DETECTED!");

@@ -248,10 +248,14 @@ MonoBehaviour:
   accelXPunchThreshold: 1.1
   accelXReturnThreshold: -0.9
   accelXRestThreshold: 0.3
+  accelYPunchThreshold: 1.2
+  accelYReturnThreshold: 0.5
+  accelYRestThreshold: 0.3
   accelZPunchThreshold: 0.8
   accelZReturnThreshold: -0.1
   accelZRestThreshold: 0.3
   gyroXPunchThreshold: 1000
+  gyroYPunchThreshold: 400
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
