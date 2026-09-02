@@ -11,11 +11,30 @@ public class ArduinoConnector : MonoBehaviour
     // to track time that has passed
     private float punchCooldownTimer = 0f;
 
-    // JAB VARIABLES - OPTIMIZE THIS LATER
-    private bool detectingJab = false;
+    // TRACKING PUNCH STATES
+    private enum PunchState
+    {
+        Waiting,
+        DetectingPunch,
+        Cooldown
+    }
+
+    // initial state is waiting
+    private PunchState punchState = PunchState.Waiting;
+    // recording accelX peaks (updated in punchDetection)
     private float jabPeak = 0f;
-    public float jabPunchThreshold = 1.1f;
-    public float jabReturnThreshold = -0.9f;
+    // threshold for when accelX peaks (the jabbing motion)
+    public float accelXPunchThreshold = 1.1f;
+    // threshold for when accelX goes down (bringing arm back)
+    public float accelXReturnThreshold = -0.9f;
+    // threshold for default accelX (rest state)
+    public float accelXRestThreshold = 0.2f;
+    // threshold for gyroX range (for detecting arm rotation in crosses)
+    public float gyroXPunchThreshold = 1000f;
+    // minimum gyroX value (updated in punchDetection)
+    private float gyroXMin = 0f;
+    // maximum gyroX value (updated in punchDetection)
+    private float gyroXMax = 0f;
 
     void Start()
     {
@@ -46,45 +65,75 @@ public class ArduinoConnector : MonoBehaviour
         if (!float.TryParse(values[5], out float gyroY)) return;
         if (!float.TryParse(values[6], out float gyroZ)) return;
 
-        if (Time.time > punchCooldownTimer)
-        {
-            DetectJab(accelX);
-        }
+        DetectPunch(accelX, accelY, accelZ, gyroX, gyroZ);
     }
 
     /**
-     * CODE FOR JAB DETECTION
-     * Parameter is accelX value
-     * Jabs show a positive spike followed by a negative one
+     * CODE FOR PUNCH DETECTION
+     * take in all needed values for jab, cross, hook, and uppercut
+     * use a switch statement and PunchState states to differentiate
      */
-    private void DetectJab(float accelX)
+    private void DetectPunch(float accelX, float accelY, float accelZ, float gyroX, float gyroZ)
     {
-        if (!detectingJab)
+        switch (punchState)
         {
-            // punch starts when accelX goes above threshold
-            if (accelX > jabPunchThreshold)
-            {
-                // set detectingJab to true and update jabPeak to current accelX
-                detectingJab = true;
-                jabPeak = accelX;
-            }
-        }
-        else
-        {
-            // keep track of the highest accelX by updating jabPeak
-            if (accelX > jabPeak)
-            {
-                jabPeak = accelX;
-            }
-
-            // when accelX reaches the negative threshold and cooldown time has passed
-            if(accelX < jabReturnThreshold)
-            {
-                // update cooldown timer
-                punchCooldownTimer = Time.time + punchCooldown;
-                Debug.Log("JAB DETECTED!");
-                detectingJab = false;
-            }
+            // initializing values once accelX reaches a threshold
+            case PunchState.Waiting:
+                if (accelX > accelXPunchThreshold)
+                {
+                    // Initialize values
+                    jabPeak = accelX;
+                    gyroXMin = gyroX;
+                    gyroXMax = gyroX;
+                    // go into detecting punch state
+                    punchState = PunchState.DetectingPunch;
+                }
+                break;
+            // detect what punch is thrown
+            case PunchState.DetectingPunch:
+                // track accelX peak
+                if (accelX > jabPeak)
+                {
+                    jabPeak = accelX;
+                }
+                // track gyroX range
+                if (gyroX < gyroXMin)
+                {
+                    gyroXMin = gyroX;
+                }
+                if (gyroX > gyroXMax)
+                {
+                    gyroXMax = gyroX;
+                }
+                // punch ends when accelX goes negative
+                if (accelX < accelXReturnThreshold)
+                {
+                    // get gyroX range for cross detection (because it's a range, it'll work for both left and right crosses)
+                    float gyroXRange = gyroXMax - gyroXMin;
+                    // determine punch type
+                    if (gyroXRange > gyroXPunchThreshold)
+                    {
+                        // if gyroX fluctuation
+                        Debug.Log("CROSS DETECTED!");
+                    }
+                    else
+                    {
+                        // if no gyroX fluctuation
+                        Debug.Log("JAB DETECTED!");
+                    }
+                    // go into cooldown
+                    punchState = PunchState.Cooldown;
+                    punchCooldownTimer = Time.time + punchCooldown;
+                }
+                break;
+            // go into cooldown after a punch is thrown
+            case PunchState.Cooldown:
+                // wait for cooldown and for acceleration to settle before going back to waiting state
+                if (Time.time >= punchCooldownTimer && Mathf.Abs(accelX) < accelXRestThreshold)
+                {
+                    punchState = PunchState.Waiting;
+                }
+                break;
         }
     }
 

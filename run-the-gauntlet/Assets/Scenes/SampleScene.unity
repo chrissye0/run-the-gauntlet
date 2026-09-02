@@ -244,6 +244,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 983c7eec1bd7f8146b1aa3f95116154c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ArduinoConnector
+  punchCooldown: 0.1
+  accelXPunchThreshold: 1.1
+  accelXReturnThreshold: -0.9
+  accelXRestThreshold: 0.1
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
