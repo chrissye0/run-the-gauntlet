@@ -21,14 +21,28 @@ public class ArduinoConnector : MonoBehaviour
 
     // initial state is waiting
     private PunchState punchState = PunchState.Waiting;
+
+    // accelX detection (FOR ALL PUNCHES)
     // recording accelX peaks (updated in punchDetection)
-    private float jabPeak = 0f;
+    private float accelXPeak = 0f;
     // threshold for when accelX peaks (the jabbing motion)
     public float accelXPunchThreshold = 1.1f;
     // threshold for when accelX goes down (bringing arm back)
     public float accelXReturnThreshold = -0.9f;
     // threshold for default accelX (rest state)
-    public float accelXRestThreshold = 0.2f;
+    public float accelXRestThreshold = 0.3f;
+
+    // accelZ detection (FOR UPPERCUTS)
+    // recording accelZ peaks (updated in punchDetection)
+    private float accelZPeak = 0f;
+    // threshold for when accelZ peaks (the uppercut motion)
+    public float accelZPunchThreshold = 0.8f;
+    // threshold for when accelZ goes down (bringing arm down)
+    public float accelZReturnThreshold = -0.1f;
+    // threshold for default accelZ (rest state)
+    public float accelZRestThreshold = 0.3f;
+
+    // gyroX detection (FOR CROSSES)
     // threshold for gyroX range (for detecting arm rotation in crosses)
     public float gyroXPunchThreshold = 1000f;
     // minimum gyroX value (updated in punchDetection)
@@ -65,7 +79,7 @@ public class ArduinoConnector : MonoBehaviour
         if (!float.TryParse(values[5], out float gyroY)) return;
         if (!float.TryParse(values[6], out float gyroZ)) return;
 
-        DetectPunch(accelX, accelY, accelZ, gyroX, gyroZ);
+        DetectPunch(accelX, accelZ, accelZ, gyroX, gyroZ);
     }
 
     /**
@@ -82,7 +96,12 @@ public class ArduinoConnector : MonoBehaviour
                 if (accelX > accelXPunchThreshold)
                 {
                     // Initialize values
-                    jabPeak = accelX;
+                    accelXPeak = accelX;
+                    // if uppercut motion (hand goes up)
+                    if (accelZ > accelZPunchThreshold)
+                    {
+                        accelZPeak = accelZ;
+                    }
                     gyroXMin = gyroX;
                     gyroXMax = gyroX;
                     // go into detecting punch state
@@ -92,9 +111,14 @@ public class ArduinoConnector : MonoBehaviour
             // detect what punch is thrown
             case PunchState.DetectingPunch:
                 // track accelX peak
-                if (accelX > jabPeak)
+                if (accelX > accelXPeak)
                 {
-                    jabPeak = accelX;
+                    accelXPeak = accelX;
+                }
+                // track accelZ peak
+                if (accelZ > accelZPeak)
+                {
+                    accelZPeak = accelZ;
                 }
                 // track gyroX range
                 if (gyroX < gyroXMin)
@@ -113,13 +137,22 @@ public class ArduinoConnector : MonoBehaviour
                     // determine punch type
                     if (gyroXRange > gyroXPunchThreshold)
                     {
-                        // if gyroX fluctuation
+                        // if gyroX fluctuation (cross)
                         Debug.Log("CROSS DETECTED!");
                     }
                     else
                     {
                         // if no gyroX fluctuation
-                        Debug.Log("JAB DETECTED!");
+                        if (accelZ < accelZReturnThreshold)
+                        {
+                            // if accelZ fluctuation (uppercut)
+                            Debug.Log("UPPERCUT DETECTED!");
+                        }
+                        else
+                        {
+                            // if no accelZ fluctuation (jab)
+                            Debug.Log("JAB DETECTED!");
+                        }
                     }
                     // go into cooldown
                     punchState = PunchState.Cooldown;
@@ -129,7 +162,7 @@ public class ArduinoConnector : MonoBehaviour
             // go into cooldown after a punch is thrown
             case PunchState.Cooldown:
                 // wait for cooldown and for acceleration to settle before going back to waiting state
-                if (Time.time >= punchCooldownTimer && Mathf.Abs(accelX) < accelXRestThreshold)
+                if (Time.time >= punchCooldownTimer && Mathf.Abs(accelX) < accelXRestThreshold && Mathf.Abs(accelZ) < accelZRestThreshold)
                 {
                     punchState = PunchState.Waiting;
                 }
