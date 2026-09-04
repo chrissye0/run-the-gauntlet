@@ -138,7 +138,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 2639702559140887953}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 21fc0aa3ee63ff2428a6b7f888ffaa66, type: 3}
+  m_Script: {fileID: 11500000, guid: 14b36012d36c4364fae42f4a614de415, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAttack
 --- !u!114 &-8960407924174001552
