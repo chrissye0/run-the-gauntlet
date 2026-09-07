@@ -13,6 +13,7 @@ public class PlayerCombat : MonoBehaviour
     InputAction rightHookAction;
     InputAction rightUppercutAction;
     InputAction blockAction;
+    public GameManager gameManager;
 
     void Start()
     {
@@ -90,6 +91,7 @@ public class PlayerCombat : MonoBehaviour
         {
             Debug.Log("Punch!!!");
             Destroy(ClosestEnemy());
+            gameManager.score += 100;
         }
     }
 
