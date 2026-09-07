@@ -194,7 +194,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawner
   enemyPrefab: {fileID: 2639702559140887953, guid: 2cc609d23eac80d4780b9dcc99b25e08, type: 3}
   player: {fileID: 1431666569}
-  maxEnemyCount: 3
+  maxEnemyCount: 5
 --- !u!4 &373013088
 Transform:
   m_ObjectHideFlags: 0
