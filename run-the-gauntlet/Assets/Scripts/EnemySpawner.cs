@@ -15,8 +15,11 @@ public class EnemySpawner : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        // # of alive enemies
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
         // set a cap for number of alive enemies
-        if (enemyList.Count < maxEnemyCount)
+        // add more enemies if count is below the cap
+        if (enemyList.Count < maxEnemyCount || enemies.Length < maxEnemyCount)
         {
             // instantiate an enemy at a random location in bounds
             GameObject enemy = Instantiate(enemyPrefab, new Vector3(Random.Range(-8, 8), 0, Random.Range(10, 20)), Quaternion.identity);

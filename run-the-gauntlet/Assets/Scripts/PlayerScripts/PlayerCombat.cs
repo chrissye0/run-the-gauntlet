@@ -50,10 +50,12 @@ public class PlayerCombat : MonoBehaviour
         GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
         // for storing closest enemy and shortest distance
         GameObject closestEnemy = null;
-        float shortestDistance = 10;
+        float shortestDistance = 4;
         // loop through all found enemies
         foreach (GameObject enemy in enemies)
         {
+            // make them all white by default
+            enemy.GetComponent<Renderer>().material.color = Color.white;
             // calculate distance
             float distance = Vector3.Distance(transform.position, enemy.transform.position);
             // see if it is the shortest and if it is within range
@@ -64,7 +66,21 @@ public class PlayerCombat : MonoBehaviour
                 closestEnemy = enemy;
             }
         }
+        // make the closest enemy red
+        if (closestEnemy != null)
+        {
+            closestEnemy.GetComponent<Renderer>().material.color = Color.red;
+        }
         return closestEnemy;
+    }
+
+    void Update()
+    {
+        // for updating the color
+        if (ClosestEnemy() != null)
+        {
+            ClosestEnemy();
+        }
     }
 
     // attack the nearest in bound enemy
