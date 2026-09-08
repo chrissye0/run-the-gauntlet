@@ -44,7 +44,7 @@ public class PlayerCombat : MonoBehaviour
         blockAction.performed += OnBlock;
     }
 
-    // returns the nearest enemy
+    // returns the nearest enemy in punching range
     GameObject ClosestEnemy()
     {
         // finds all existing game objects with tag "Enemy"
@@ -78,10 +78,9 @@ public class PlayerCombat : MonoBehaviour
     void Update()
     {
         // for updating the color
-        if (ClosestEnemy() != null)
-        {
-            ClosestEnemy();
-        }
+        // return out if no enemy in range
+        if (ClosestEnemy() == null) return;
+        ClosestEnemy();
     }
 
     // attack the nearest in bound enemy
