@@ -1,11 +1,27 @@
-using UnityEngine;
+using System;
 using System.IO.Ports;
+using UnityEngine;
 
 public class ArduinoConnector : MonoBehaviour
 {
     // arguments are port number and baud rate (ADJUST AS NEEDED)
     private SerialPort leftSerial = new SerialPort("COM5", 115200);
     private SerialPort rightSerial = new SerialPort("COM6", 115200);
+
+    //picking up on punch events (connect to PlayerCombat)
+    public enum PunchType
+    {
+        Jab,
+        Cross,
+        Hook,
+        Uppercut
+    }
+    public enum Hand
+    {
+        Left,
+        Right
+    }
+    public event Action<Hand, PunchType> PunchDetected;
 
     // time in between punches
     public float punchCooldown = 0.1f;
@@ -19,6 +35,12 @@ public class ArduinoConnector : MonoBehaviour
         DetectingPunch,
         Cooldown
     }
+    //private enum RightPunchState
+    //{
+    //    Waiting,
+    //    DetectingPunch,
+    //    Cooldown
+    //}
 
     // initial state is waiting
     private PunchState punchState = PunchState.Waiting;
@@ -66,7 +88,6 @@ public class ArduinoConnector : MonoBehaviour
     private float gyroYMin = 0f;
     // maximum gyroY value (updated in punchDetection)
     private float gyroYMax = 0f;
-    // for setting left and right hand
 
     void Start()
     {
@@ -176,11 +197,11 @@ public class ArduinoConnector : MonoBehaviour
                     gyroXMax = gyroX;
                 }
                 // track gyroY range
-                if (gyroY < gyroXMin)
+                if (gyroY < gyroYMin)
                 {
                     gyroYMin = gyroY;
                 }
-                if (gyroY > gyroXMax)
+                if (gyroY > gyroYMax)
                 {
                     gyroYMax = gyroY;
                 }
@@ -198,9 +219,11 @@ public class ArduinoConnector : MonoBehaviour
                         if (hand == "left")
                         {
                             Debug.Log("LEFT CROSS DETECTED!");
+                            PunchDetected?.Invoke(Hand.Left, PunchType.Cross);
                         } else if (hand == "right")
                         {
                             Debug.Log("RIGHT CROSS DETECTED!");
+                            PunchDetected?.Invoke(Hand.Right, PunchType.Cross);
                         }
                     }
                     else
@@ -212,10 +235,12 @@ public class ArduinoConnector : MonoBehaviour
                             if (hand == "left")
                             {
                                 Debug.Log("LEFT HOOK DETECTED!");
+                                PunchDetected?.Invoke(Hand.Left, PunchType.Hook);
                             }
                             else if (hand == "right")
                             {
                                 Debug.Log("RIGHT HOOK DETECTED!");
+                                PunchDetected?.Invoke(Hand.Right, PunchType.Hook);
                             }
                         }
                         else if (accelZ < accelZReturnThreshold)
@@ -224,10 +249,12 @@ public class ArduinoConnector : MonoBehaviour
                             if (hand == "left")
                             {
                                 Debug.Log("LEFT UPPERCUT DETECTED!");
+                                PunchDetected?.Invoke(Hand.Left, PunchType.Uppercut);
                             }
                             else if (hand == "right")
                             {
                                 Debug.Log("RIGHT UPPERCUT DETECTED!");
+                                PunchDetected?.Invoke(Hand.Right, PunchType.Uppercut);
                             }
                         }
                         else
@@ -236,10 +263,12 @@ public class ArduinoConnector : MonoBehaviour
                             if (hand == "left")
                             {
                                 Debug.Log("LEFT JAB DETECTED!");
+                                PunchDetected?.Invoke(Hand.Left, PunchType.Jab);
                             }
                             else if (hand == "right")
                             {
                                 Debug.Log("RIGHT JAB DETECTED!");
+                                PunchDetected?.Invoke(Hand.Right, PunchType.Jab);
                             }
                         }
                     }
