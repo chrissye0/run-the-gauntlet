@@ -4,7 +4,8 @@ using System.IO.Ports;
 public class ArduinoConnector : MonoBehaviour
 {
     // arguments are port number and baud rate (ADJUST AS NEEDED)
-    private SerialPort serial = new SerialPort("COM6", 115200);
+    private SerialPort leftSerial = new SerialPort("COM5", 115200);
+    private SerialPort rightSerial = new SerialPort("COM6", 115200);
 
     // time in between punches
     public float punchCooldown = 0.1f;
@@ -65,37 +66,54 @@ public class ArduinoConnector : MonoBehaviour
     private float gyroYMin = 0f;
     // maximum gyroY value (updated in punchDetection)
     private float gyroYMax = 0f;
+    // for setting left and right hand
 
     void Start()
     {
-        serial.Open();
+        leftSerial.Open();
+        rightSerial.Open();
         // fixes serial connection problem
-        serial.DtrEnable = true;
+        leftSerial.DtrEnable = true;
+        rightSerial.DtrEnable = true;
         // time in ms that the serial will wait to read the command
-        serial.ReadTimeout = 50;
-        Debug.Log("Serial opened: " + serial.IsOpen);
+        leftSerial.ReadTimeout = 50;
+        rightSerial.ReadTimeout = 50;
+        Debug.Log("Left serial opened: " + leftSerial.IsOpen);
+        Debug.Log("Right serial opened: " + leftSerial.IsOpen);
     }
 
     // Update is called once per frame
     void Update()
     {
         // PARSING ARDUINO DATA
-        string data = serial.ReadLine();
-        string[] values = data.Split(",");
+        string leftData = leftSerial.ReadLine();
+        string[] leftValues = leftData.Split(",");
+        string rightData = rightSerial.ReadLine();
+        string[] rightValues = rightData.Split(",");
 
         // return out if not right amount
-        if (values.Length != 7) return;
+        if (leftValues.Length != 8) return;
+        if (rightValues.Length != 8) return;
 
         // try to parse values, return out if it fails
-        if (!long.TryParse(values[0], out long time)) return;
-        if (!float.TryParse(values[1], out float accelX)) return;
-        if (!float.TryParse(values[2], out float accelY)) return;
-        if (!float.TryParse(values[3], out float accelZ)) return;
-        if (!float.TryParse(values[4], out float gyroX)) return;
-        if (!float.TryParse(values[5], out float gyroY)) return;
-        if (!float.TryParse(values[6], out float gyroZ)) return;
-        //Debug.Log(accelY);
-        DetectPunch(accelX, accelZ, accelZ, gyroX, gyroY);
+        //if (!long.TryParse(leftValues[1], out long leftTime)) return;
+        if (!float.TryParse(leftValues[2], out float leftAccelX)) return;
+        if (!float.TryParse(leftValues[3], out float leftAccelY)) return;
+        if (!float.TryParse(leftValues[4], out float leftAccelZ)) return;
+        if (!float.TryParse(leftValues[5], out float leftGyroX)) return;
+        if (!float.TryParse(leftValues[6], out float leftGyroY)) return;
+        if (!float.TryParse(leftValues[7], out float leftGyroZ)) return;
+        //if (!long.TryParse(rightValues[1], out long rightTime)) return;
+        if (!float.TryParse(rightValues[2], out float rightAccelX)) return;
+        if (!float.TryParse(rightValues[3], out float rightAccelY)) return;
+        if (!float.TryParse(rightValues[4], out float rightAccelZ)) return;
+        if (!float.TryParse(rightValues[5], out float rightGyroX)) return;
+        if (!float.TryParse(rightValues[6], out float rightGyroY)) return;
+        if (!float.TryParse(rightValues[7], out float rightGyroZ)) return;
+
+
+        DetectPunch("left", leftAccelX, leftAccelY, leftAccelZ, leftGyroX, leftGyroY);
+        DetectPunch("right", rightAccelX, rightAccelY, rightAccelZ, rightGyroX, rightGyroY);
     }
 
     /**
@@ -103,7 +121,7 @@ public class ArduinoConnector : MonoBehaviour
      * take in all needed values for jab, cross, hook, and uppercut
      * use a switch statement and PunchState states to differentiate
      */
-    private void DetectPunch(float accelX, float accelY, float accelZ, float gyroX, float gyroY)
+    private void DetectPunch(string hand, float accelX, float accelY, float accelZ, float gyroX, float gyroY)
     {
         switch (punchState)
         {
@@ -177,7 +195,13 @@ public class ArduinoConnector : MonoBehaviour
                     if (gyroXRange > gyroXPunchThreshold)
                     {
                         // if gyroX fluctuation (cross)
-                        Debug.Log("CROSS DETECTED!");
+                        if (hand == "left")
+                        {
+                            Debug.Log("LEFT CROSS DETECTED!");
+                        } else if (hand == "right")
+                        {
+                            Debug.Log("RIGHT CROSS DETECTED!");
+                        }
                     }
                     else
                     { // if no gyroX fluctuation
@@ -185,17 +209,38 @@ public class ArduinoConnector : MonoBehaviour
                         if (Mathf.Abs(accelY) > accelYReturnThreshold && gyroYRange > gyroYPunchThreshold)
                         {
                             // if accelY and gyroY fluctuation (hook)
-                            Debug.Log("HOOK DETECTED!");
+                            if (hand == "left")
+                            {
+                                Debug.Log("LEFT HOOK DETECTED!");
+                            }
+                            else if (hand == "right")
+                            {
+                                Debug.Log("RIGHT HOOK DETECTED!");
+                            }
                         }
                         else if (accelZ < accelZReturnThreshold)
                         {
                             // if accelZ fluctuation (uppercut)
-                            Debug.Log("UPPERCUT DETECTED!");
+                            if (hand == "left")
+                            {
+                                Debug.Log("LEFT UPPERCUT DETECTED!");
+                            }
+                            else if (hand == "right")
+                            {
+                                Debug.Log("RIGHT UPPERCUT DETECTED!");
+                            }
                         }
                         else
                         {
                             // if no accelZ fluctuation (jab)
-                            Debug.Log("JAB DETECTED!");
+                            if (hand == "left")
+                            {
+                                Debug.Log("LEFT JAB DETECTED!");
+                            }
+                            else if (hand == "right")
+                            {
+                                Debug.Log("RIGHT JAB DETECTED!");
+                            }
                         }
                     }
                     // go into cooldown
@@ -217,6 +262,7 @@ public class ArduinoConnector : MonoBehaviour
     // close serial when app is closed
     private void OnApplicationQuit()
     {
-        serial.Close();
+        leftSerial.Close();
+        rightSerial.Close();
     }
 }
