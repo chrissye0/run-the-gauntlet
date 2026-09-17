@@ -24,9 +24,7 @@ public class ArduinoConnector : MonoBehaviour
     public event Action<Hand, PunchType> PunchDetected;
 
     // time in between punches
-    public float punchCooldown = 0.1f;
-    // to track time that has passed
-    private float punchCooldownTimer = 0f;
+    public float punchCooldown = 0.8f;
 
     // TRACKING PUNCH STATES
     private enum PunchState
@@ -35,59 +33,45 @@ public class ArduinoConnector : MonoBehaviour
         DetectingPunch,
         Cooldown
     }
-    //private enum RightPunchState
-    //{
-    //    Waiting,
-    //    DetectingPunch,
-    //    Cooldown
-    //}
 
-    // initial state is waiting
-    private PunchState punchState = PunchState.Waiting;
+    private class PunchTracker
+    {
+        // initialize punch state to waiting
+        public PunchState state = PunchState.Waiting;
+        // to track time that has passed
+        public float cooldownTimer = 0f;
+        // Accel X
+        public float accelXMin = 0f;
+        public float accelXMax = 0f;
+        // Accel Y
+        public float accelYMin = 0f;
+        public float accelYMax = 0f;
+        // Gyro X
+        public float gyroXMin = 0f;
+        public float gyroXMax = 0f;
+        // Gyro Y
+        public float gyroYMin = 0f;
+        public float gyroYMax = 0f;
+    }
 
-    // accelX detection (FOR ALL PUNCHES)
-    // recording accelX peaks (updated in punchDetection)
-    private float accelXPeak = 0f;
-    // threshold for when accelX peaks (the jabbing motion)
+    // create independent trackers for each glove
+    private PunchTracker leftTracker = new PunchTracker();
+    private PunchTracker rightTracker = new PunchTracker();
+
+    // threshold for when accelX peaks (the forward jabbing motion)
     public float accelXPunchThreshold = 1.1f;
-    // threshold for when accelX goes down (bringing arm back)
-    public float accelXReturnThreshold = -0.9f;
-    // threshold for default accelX (rest state)
-    public float accelXRestThreshold = 0.3f;
 
-    // recording accelX peaks (updated in punchDetection)
-    private float accelYPeak = 0f;
-    // threshold for when accelY peaks (the sideways hook motion) - will use absolute value for readings to account for left and right hooks
+    // threshold for when accelY peaks
     public float accelYPunchThreshold = 1.2f;
-    // threshold for when accelY returns (it's like this because of absolute value and game mistaking hooks for uppercuts) (tweak this probably)
-    public float accelYReturnThreshold = 1.5f;
-    // // threshold for default accelY (rest state)
-    public float accelYRestThreshold = 0.3f;
 
-    // accelZ detection (FOR UPPERCUTS)
-    // recording accelZ peaks (updated in punchDetection)
-    private float accelZPeak = 0f;
-    // threshold for when accelZ peaks (the uppercut motion)
+    // threshold for when accelZ peaks
     public float accelZPunchThreshold = 0.8f;
-    // threshold for when accelZ goes down (bringing arm down)
-    public float accelZReturnThreshold = -0.1f;
-    // threshold for default accelZ (rest state)
-    public float accelZRestThreshold = 0.3f;
 
-    // gyroX detection (FOR CROSSES)
     // threshold for gyroX range (for detecting arm rotation in crosses)
-    public float gyroXPunchThreshold = 1000f;
-    // minimum gyroX value (updated in punchDetection)
-    private float gyroXMin = 0f;
-    // maximum gyroX value (updated in punchDetection)
-    private float gyroXMax = 0f;
+    public float gyroXPunchThreshold = 300f;
 
-    // gyroY detection (FOR HOOKS)
+    // threshold for gyroY range
     public float gyroYPunchThreshold = 400f;
-    // minimum gyroY value (updated in punchDetection)
-    private float gyroYMin = 0f;
-    // maximum gyroY value (updated in punchDetection)
-    private float gyroYMax = 0f;
 
     void Start()
     {
@@ -107,15 +91,22 @@ public class ArduinoConnector : MonoBehaviour
     void Update()
     {
         // PARSING ARDUINO DATA
-        string leftData = leftSerial.ReadLine();
+        string leftData;
+        string rightData;
+        try
+        {
+            leftData = leftSerial.ReadLine();
+            rightData = rightSerial.ReadLine();
+        }
+        catch (TimeoutException)
+        {
+            return;
+        }
         string[] leftValues = leftData.Split(",");
-        string rightData = rightSerial.ReadLine();
         string[] rightValues = rightData.Split(",");
-
         // return out if not right amount
         if (leftValues.Length != 8) return;
         if (rightValues.Length != 8) return;
-
         // try to parse values, return out if it fails
         //if (!long.TryParse(leftValues[1], out long leftTime)) return;
         if (!float.TryParse(leftValues[2], out float leftAccelX)) return;
@@ -131,158 +122,121 @@ public class ArduinoConnector : MonoBehaviour
         if (!float.TryParse(rightValues[5], out float rightGyroX)) return;
         if (!float.TryParse(rightValues[6], out float rightGyroY)) return;
         if (!float.TryParse(rightValues[7], out float rightGyroZ)) return;
-
-
-        DetectPunch("left", leftAccelX, leftAccelY, leftAccelZ, leftGyroX, leftGyroY);
-        DetectPunch("right", rightAccelX, rightAccelY, rightAccelZ, rightGyroX, rightGyroY);
+        // use these values + hand type + tracker to detect punches
+        DetectPunch(Hand.Left, leftAccelX, leftAccelY, leftAccelZ, leftGyroX, leftGyroY, leftTracker);
+        DetectPunch(Hand.Right, rightAccelX, rightAccelY, rightAccelZ, rightGyroX, rightGyroY, rightTracker);
     }
 
     /**
-     * CODE FOR PUNCH DETECTION
-     * take in all needed values for jab, cross, hook, and uppercut
-     * use a switch statement and PunchState states to differentiate
-     */
-    private void DetectPunch(string hand, float accelX, float accelY, float accelZ, float gyroX, float gyroY)
+    * CODE FOR PUNCH DETECTION
+    * take in all needed values for jab, cross, hook, and uppercut
+    * use a switch statement and PunchState states to differentiate
+    */
+    private void DetectPunch(Hand hand, float accelX, float accelY, float accelZ, float gyroX, float gyroY, PunchTracker tracker)
     {
-        switch (punchState)
+        switch (tracker.state)
         {
             // initializing values once accelX reaches a threshold
             case PunchState.Waiting:
-                if (accelX > accelXPunchThreshold)
+                if (accelX > accelXPunchThreshold /* || Mathf.Abs(accelY) > accelYPunchThreshold */)
                 {
-                    // initialize values
-                    accelXPeak = accelX;
-                    // if uppercut motion (hand goes up)
-                    if (accelZ > accelZPunchThreshold)
-                    {
-                        accelZPeak = accelZ;
-                    }
-                    // if hook motion (either left or right hand goes sideways)
-                    if (Mathf.Abs(accelY) > accelYPunchThreshold)
-                    {
-                        accelYPeak = Mathf.Abs(accelY);
-                    }
-                    gyroXMin = gyroX;
-                    gyroXMax = gyroX;
-                    gyroYMin = gyroY;
-                    gyroYMax = gyroY;
+                    // initialize tracker values
+                    tracker.accelXMin = accelX;
+                    tracker.accelXMax = accelX;
+                    tracker.accelYMin = accelY;
+                    tracker.accelYMax = accelY;
+                    tracker.gyroXMin = gyroX;
+                    tracker.gyroXMax = gyroX;
+                    tracker.gyroYMin = gyroY;
+                    tracker.gyroYMax = gyroY;
                     // go into detecting punch state
-                    punchState = PunchState.DetectingPunch;
+                    tracker.state = PunchState.DetectingPunch;
                 }
                 break;
             // detect what punch is thrown
             case PunchState.DetectingPunch:
-                // track accelX peak
-                if (accelX > accelXPeak)
+                // update min and max values
+                if (accelX < tracker.accelXMin)
                 {
-                    accelXPeak = accelX;
+                    tracker.accelXMin = accelX;
                 }
-                // track absolute value of accelY peak
-                if (Mathf.Abs(accelY) > accelYPeak)
+                if (accelX > tracker.accelXMax)
                 {
-                    accelYPeak = Mathf.Abs(accelY);
+                    tracker.accelXMax = accelX;
                 }
-                // track accelZ peak
-                if (accelZ > accelZPeak)
+                if (accelY < tracker.accelYMin)
                 {
-                    accelZPeak = accelZ;
+                    tracker.accelYMin = accelY;
                 }
-                // track gyroX range
-                if (gyroX < gyroXMin)
+                if (accelY > tracker.accelYMax)
                 {
-                    gyroXMin = gyroX;
+                    tracker.accelYMax = accelY;
                 }
-                if (gyroX > gyroXMax)
+                if (gyroX < tracker.gyroXMin)
                 {
-                    gyroXMax = gyroX;
+                    tracker.gyroXMin = gyroX;
                 }
-                // track gyroY range
-                if (gyroY < gyroYMin)
+                if (gyroX > tracker.gyroXMax)
                 {
-                    gyroYMin = gyroY;
+                    tracker.gyroXMax = gyroX;
                 }
-                if (gyroY > gyroYMax)
+                if (gyroY < tracker.gyroYMin)
                 {
-                    gyroYMax = gyroY;
+                    tracker.gyroYMin = gyroY;
                 }
-                // punch ends when accelX goes negative
-                if (accelX < accelXReturnThreshold)
+                if (gyroY > tracker.gyroYMax)
                 {
-                    // get gyroX range for cross detection (because it's a range, it'll work for both left and right crosses)
-                    float gyroXRange = gyroXMax - gyroXMin;
-                    // same for gyroY and hook detection
-                    float gyroYRange = gyroYMax - gyroYMin;
-                    // determine punch type
+                    tracker.gyroYMax = gyroY;
+                }
+                // get ranges of everything
+                float accelXRange = tracker.accelXMax - tracker.accelXMin;
+                float accelYRange = tracker.accelYMax - tracker.accelYMin;
+                float gyroXRange = tracker.gyroXMax - tracker.gyroXMin;
+                float gyroYRange = tracker.gyroYMax - tracker.gyroYMin;
+                // if accelX passes threshold (this would be a forward motion)
+                if (accelXRange > accelXPunchThreshold)
+                {
+                    // check gyroX for crosses
                     if (gyroXRange > gyroXPunchThreshold)
                     {
-                        // if gyroX fluctuation (cross)
-                        if (hand == "left")
+                        if (hand == Hand.Left)
                         {
                             Debug.Log("LEFT CROSS DETECTED!");
                             PunchDetected?.Invoke(Hand.Left, PunchType.Cross);
-                        } else if (hand == "right")
+                        }
+                        else if (hand == Hand.Right)
                         {
                             Debug.Log("RIGHT CROSS DETECTED!");
                             PunchDetected?.Invoke(Hand.Right, PunchType.Cross);
                         }
+                        tracker.state = PunchState.Cooldown;
+                        tracker.cooldownTimer = Time.time + punchCooldown;
+                        break;
                     }
                     else
-                    { // if no gyroX fluctuation
-                        //Debug.Log("accelY: " + accelY + " | gyroY: " + gyroY);
-                        if (Mathf.Abs(accelY) > accelYReturnThreshold && gyroYRange > gyroYPunchThreshold)
+                    {
+                        // if no gyroX fluctuation
+                        if (hand == Hand.Left)
                         {
-                            // if accelY and gyroY fluctuation (hook)
-                            if (hand == "left")
-                            {
-                                Debug.Log("LEFT HOOK DETECTED!");
-                                PunchDetected?.Invoke(Hand.Left, PunchType.Hook);
-                            }
-                            else if (hand == "right")
-                            {
-                                Debug.Log("RIGHT HOOK DETECTED!");
-                                PunchDetected?.Invoke(Hand.Right, PunchType.Hook);
-                            }
+                            Debug.Log("LEFT JAB DETECTED!");
+                            PunchDetected?.Invoke(Hand.Left, PunchType.Jab);
                         }
-                        else if (accelZ < accelZReturnThreshold)
+                        else if (hand == Hand.Right)
                         {
-                            // if accelZ fluctuation (uppercut)
-                            if (hand == "left")
-                            {
-                                Debug.Log("LEFT UPPERCUT DETECTED!");
-                                PunchDetected?.Invoke(Hand.Left, PunchType.Uppercut);
-                            }
-                            else if (hand == "right")
-                            {
-                                Debug.Log("RIGHT UPPERCUT DETECTED!");
-                                PunchDetected?.Invoke(Hand.Right, PunchType.Uppercut);
-                            }
+                            Debug.Log("RIGHT JAB DETECTED!");
+                            PunchDetected?.Invoke(Hand.Right, PunchType.Jab);
                         }
-                        else
-                        {
-                            // if no accelZ fluctuation (jab)
-                            if (hand == "left")
-                            {
-                                Debug.Log("LEFT JAB DETECTED!");
-                                PunchDetected?.Invoke(Hand.Left, PunchType.Jab);
-                            }
-                            else if (hand == "right")
-                            {
-                                Debug.Log("RIGHT JAB DETECTED!");
-                                PunchDetected?.Invoke(Hand.Right, PunchType.Jab);
-                            }
-                        }
+                        tracker.state = PunchState.Cooldown;
+                        tracker.cooldownTimer = Time.time + punchCooldown;
+                        break;
                     }
-                    // go into cooldown
-                    punchState = PunchState.Cooldown;
-                    punchCooldownTimer = Time.time + punchCooldown;
                 }
                 break;
-            // go into cooldown after a punch is thrown
             case PunchState.Cooldown:
-                // wait for cooldown and for acceleration to settle before going back to waiting state
-                if (Time.time >= punchCooldownTimer && Mathf.Abs(accelX) < accelXRestThreshold && Mathf.Abs(accelZ) < accelZRestThreshold)
+                // go into cooldown - wait until cooldown timer passes and accelX goes back to normal
+                if (Time.time >= tracker.cooldownTimer && Mathf.Abs(accelX) < accelXPunchThreshold)
                 {
-                    punchState = PunchState.Waiting;
+                    tracker.state = PunchState.Waiting;
                 }
                 break;
         }
