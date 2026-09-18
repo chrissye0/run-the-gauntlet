@@ -46,6 +46,9 @@ public class ArduinoConnector : MonoBehaviour
         // Accel Y
         public float accelYMin = 0f;
         public float accelYMax = 0f;
+        // Accel Z
+        public float accelZMin = 0f;
+        public float accelZMax = 0f;
         // Gyro X
         public float gyroXMin = 0f;
         public float gyroXMax = 0f;
@@ -59,19 +62,22 @@ public class ArduinoConnector : MonoBehaviour
     private PunchTracker rightTracker = new PunchTracker();
 
     // threshold for when accelX peaks (the forward jabbing motion)
-    public float accelXPunchThreshold = 1.1f;
+    public float accelXPunchThreshold = 1f;
 
     // threshold for when accelY peaks
-    public float accelYPunchThreshold = 1.2f;
+    public float accelYPunchThreshold = 2f;
 
     // threshold for when accelZ peaks
-    public float accelZPunchThreshold = 0.8f;
+    public float accelZPunchThreshold = 0.0f;
 
     // threshold for gyroX range (for detecting arm rotation in crosses)
-    public float gyroXPunchThreshold = 300f;
+    public float gyroXPunchThreshold = 400f;
 
     // threshold for gyroY range
-    public float gyroYPunchThreshold = 400f;
+    public float gyroYPunchThreshold = 300f;
+
+    // threshold for gyroZ range
+    //public float gyroZPunchThreshold = 400f;
 
     void Start()
     {
@@ -145,6 +151,8 @@ public class ArduinoConnector : MonoBehaviour
                     tracker.accelXMax = accelX;
                     tracker.accelYMin = accelY;
                     tracker.accelYMax = accelY;
+                    tracker.accelZMin = accelZ;
+                    tracker.accelZMax = accelZ;
                     tracker.gyroXMin = gyroX;
                     tracker.gyroXMax = gyroX;
                     tracker.gyroYMin = gyroY;
@@ -172,6 +180,14 @@ public class ArduinoConnector : MonoBehaviour
                 {
                     tracker.accelYMax = accelY;
                 }
+                if (accelZ < tracker.accelZMin)
+                {
+                    tracker.accelZMin = accelZ;
+                }
+                if (accelZ > tracker.accelZMax)
+                {
+                    tracker.accelZMax = accelZ;
+                }
                 if (gyroX < tracker.gyroXMin)
                 {
                     tracker.gyroXMin = gyroX;
@@ -191,6 +207,7 @@ public class ArduinoConnector : MonoBehaviour
                 // get ranges of everything
                 float accelXRange = tracker.accelXMax - tracker.accelXMin;
                 float accelYRange = tracker.accelYMax - tracker.accelYMin;
+                float accelZRange = tracker.accelZMax - tracker.accelZMin;
                 float gyroXRange = tracker.gyroXMax - tracker.gyroXMin;
                 float gyroYRange = tracker.gyroYMax - tracker.gyroYMin;
                 // if accelX passes threshold (this would be a forward motion)
@@ -208,6 +225,22 @@ public class ArduinoConnector : MonoBehaviour
                         {
                             Debug.Log("RIGHT CROSS DETECTED!");
                             PunchDetected?.Invoke(Hand.Right, PunchType.Cross);
+                        }
+                        tracker.state = PunchState.Cooldown;
+                        tracker.cooldownTimer = Time.time + punchCooldown;
+                        break;
+                    }
+                    else if (gyroYRange > gyroYPunchThreshold && accelZRange > accelZPunchThreshold)
+                    {
+                        if (hand == Hand.Left)
+                        {
+                            Debug.Log("LEFT HOOK DETECTED!");
+                            PunchDetected?.Invoke(Hand.Left, PunchType.Hook);
+                        }
+                        else if (hand == Hand.Right)
+                        {
+                            Debug.Log("RIGHT HOOK DETECTED!");
+                            PunchDetected?.Invoke(Hand.Right, PunchType.Hook);
                         }
                         tracker.state = PunchState.Cooldown;
                         tracker.cooldownTimer = Time.time + punchCooldown;
