@@ -55,6 +55,9 @@ public class ArduinoConnector : MonoBehaviour
         // Gyro Y
         public float gyroYMin = 0f;
         public float gyroYMax = 0f;
+        // Gyro Z
+        public float gyroZMin = 0f;
+        public float gyroZMax = 0f;
     }
 
     // create independent trackers for each glove
@@ -68,16 +71,16 @@ public class ArduinoConnector : MonoBehaviour
     public float accelYPunchThreshold = 2f;
 
     // threshold for when accelZ peaks
-    public float accelZPunchThreshold = 0.0f;
+    public float accelZPunchThreshold = 0.3f;
 
     // threshold for gyroX range (for detecting arm rotation in crosses)
-    public float gyroXPunchThreshold = 400f;
+    public float gyroXPunchThreshold = 350f;
 
     // threshold for gyroY range
-    public float gyroYPunchThreshold = 300f;
+    public float gyroYPunchThreshold = 100f;
 
     // threshold for gyroZ range
-    //public float gyroZPunchThreshold = 400f;
+    public float gyroZPunchThreshold = 250f;
 
     void Start()
     {
@@ -129,8 +132,8 @@ public class ArduinoConnector : MonoBehaviour
         if (!float.TryParse(rightValues[6], out float rightGyroY)) return;
         if (!float.TryParse(rightValues[7], out float rightGyroZ)) return;
         // use these values + hand type + tracker to detect punches
-        DetectPunch(Hand.Left, leftAccelX, leftAccelY, leftAccelZ, leftGyroX, leftGyroY, leftTracker);
-        DetectPunch(Hand.Right, rightAccelX, rightAccelY, rightAccelZ, rightGyroX, rightGyroY, rightTracker);
+        DetectPunch(Hand.Left, leftAccelX, leftAccelY, leftAccelZ, leftGyroX, leftGyroY, leftGyroZ, leftTracker);
+        DetectPunch(Hand.Right, rightAccelX, rightAccelY, rightAccelZ, rightGyroX, rightGyroY, rightGyroZ, rightTracker);
     }
 
     /**
@@ -138,13 +141,13 @@ public class ArduinoConnector : MonoBehaviour
     * take in all needed values for jab, cross, hook, and uppercut
     * use a switch statement and PunchState states to differentiate
     */
-    private void DetectPunch(Hand hand, float accelX, float accelY, float accelZ, float gyroX, float gyroY, PunchTracker tracker)
+    private void DetectPunch(Hand hand, float accelX, float accelY, float accelZ, float gyroX, float gyroY, float gyroZ, PunchTracker tracker)
     {
         switch (tracker.state)
         {
             // initializing values once accelX reaches a threshold
             case PunchState.Waiting:
-                if (accelX > accelXPunchThreshold /* || Mathf.Abs(accelY) > accelYPunchThreshold */)
+                if (accelX > accelXPunchThreshold)
                 {
                     // initialize tracker values
                     tracker.accelXMin = accelX;
@@ -157,6 +160,8 @@ public class ArduinoConnector : MonoBehaviour
                     tracker.gyroXMax = gyroX;
                     tracker.gyroYMin = gyroY;
                     tracker.gyroYMax = gyroY;
+                    tracker.gyroZMin = gyroZ;
+                    tracker.gyroZMax = gyroZ;
                     // go into detecting punch state
                     tracker.state = PunchState.DetectingPunch;
                 }
@@ -204,27 +209,59 @@ public class ArduinoConnector : MonoBehaviour
                 {
                     tracker.gyroYMax = gyroY;
                 }
+                if (gyroZ < tracker.gyroZMin)
+                {
+                    tracker.gyroZMin = gyroZ;
+                }
+                if (gyroZ > tracker.gyroZMax)
+                {
+                    tracker.gyroZMax = gyroZ;
+                }
                 // get ranges of everything
                 float accelXRange = tracker.accelXMax - tracker.accelXMin;
                 float accelYRange = tracker.accelYMax - tracker.accelYMin;
                 float accelZRange = tracker.accelZMax - tracker.accelZMin;
                 float gyroXRange = tracker.gyroXMax - tracker.gyroXMin;
                 float gyroYRange = tracker.gyroYMax - tracker.gyroYMin;
+                float gyroZRange = tracker.gyroZMax - tracker.gyroZMin;
                 // if accelX passes threshold (this would be a forward motion)
                 if (accelXRange > accelXPunchThreshold)
                 {
-                    // check gyroX for crosses
+                    Debug.Log("Accel X Range: " + accelXRange);
+                    //Debug.Log("Accel Y Range: " + accelYRange);
+                    //Debug.Log("Accel Z Range: " + accelZRange);
+                    Debug.Log("Gyro X Range: " + gyroXRange);
+                    //Debug.Log("Gyro Y Range: " + gyroYRange);
+                    //Debug.Log("Gyro Z Range: " + gyroZRange);
+
+                    // check gyroX for crosses and uppercuts
                     if (gyroXRange > gyroXPunchThreshold)
                     {
-                        if (hand == Hand.Left)
+                        if (gyroYRange > gyroYPunchThreshold && accelZRange > accelZPunchThreshold)
                         {
-                            Debug.Log("LEFT CROSS DETECTED!");
-                            PunchDetected?.Invoke(Hand.Left, PunchType.Cross);
+                            if (hand == Hand.Left)
+                            {
+                                Debug.Log("LEFT UPPERCUT DETECTED!");
+                                PunchDetected?.Invoke(Hand.Left, PunchType.Uppercut);
+                            }
+                            else if (hand == Hand.Right)
+                            {
+                                Debug.Log("RIGHT UPPERCUT DETECTED!");
+                                PunchDetected?.Invoke(Hand.Right, PunchType.Uppercut);
+                            }
                         }
-                        else if (hand == Hand.Right)
+                        else
                         {
-                            Debug.Log("RIGHT CROSS DETECTED!");
-                            PunchDetected?.Invoke(Hand.Right, PunchType.Cross);
+                            if (hand == Hand.Left)
+                            {
+                                Debug.Log("LEFT CROSS DETECTED!");
+                                PunchDetected?.Invoke(Hand.Left, PunchType.Cross);
+                            }
+                            else if (hand == Hand.Right)
+                            {
+                                Debug.Log("RIGHT CROSS DETECTED!");
+                                PunchDetected?.Invoke(Hand.Right, PunchType.Cross);
+                            }
                         }
                         tracker.state = PunchState.Cooldown;
                         tracker.cooldownTimer = Time.time + punchCooldown;
@@ -248,7 +285,7 @@ public class ArduinoConnector : MonoBehaviour
                     }
                     else
                     {
-                        // if no gyroX fluctuation
+                        // if no gyro fluctuation
                         if (hand == Hand.Left)
                         {
                             Debug.Log("LEFT JAB DETECTED!");

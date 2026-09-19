@@ -1862,9 +1862,10 @@ MonoBehaviour:
   punchCooldown: 0.8
   accelXPunchThreshold: 1
   accelYPunchThreshold: 2
-  accelZPunchThreshold: 0
-  gyroXPunchThreshold: 400
-  gyroYPunchThreshold: 300
+  accelZPunchThreshold: 0.3
+  gyroXPunchThreshold: 350
+  gyroYPunchThreshold: 200
+  gyroZPunchThreshold: 50
 --- !u!114 &2140801592
 MonoBehaviour:
   m_ObjectHideFlags: 0
