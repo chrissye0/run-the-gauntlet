@@ -6,7 +6,13 @@ public class PlayerTargeting : MonoBehaviour
     public float targetRange = 20f;
     // distance to attack
     public float attackRange = 4f;
-    // store activeEnemy (make a public version for other scripts)
+    // next enemy to target
+    private GameObject targetEnemy;
+    public GameObject TargetEnemy
+    {
+        get { return targetEnemy; }
+    }
+    // for targeted enemy in attack range
     private GameObject activeEnemy;
     public GameObject ActiveEnemy
     {
@@ -22,14 +28,13 @@ public class PlayerTargeting : MonoBehaviour
     void Update()
     {
         // if we don't have an enemy, find one
-        if (activeEnemy == null)
+        if (targetEnemy == null)
         {
             FindNewTarget();
-        }
-        // check whether the current enemy has entered attack range
-        if (activeEnemy != null)
+        } else
         {
-            CheckAttackRange();
+            // otherwise, see if the enemy is within attack range
+            CheckAttackRange(targetEnemy);
         }
     }
 
@@ -53,39 +58,26 @@ public class PlayerTargeting : MonoBehaviour
                 closestEnemy = enemy;
             }
         }
-        // set active enemy to the closest enemy
-        SetActiveEnemy(closestEnemy);
+        targetEnemy = closestEnemy;
     }
 
     // see if an enemy is within attack range
-    void CheckAttackRange()
+    void CheckAttackRange(GameObject enemy)
     {
-        float distance = Vector3.Distance(transform.position, activeEnemy.transform.position);
+        float distance = Vector3.Distance(transform.position, enemy.transform.position);
         // if enemy is close enough to be attacked
         if (distance <= attackRange)
         {
             // mark as red
-            activeEnemy.GetComponent<Renderer>().material.color = Color.red;
+            enemy.GetComponent<Renderer>().material.color = Color.red;
+            // set it to the active enemy
+            activeEnemy = enemy;
         }
         else
         {
             // enemy is not close enough
             // mark as white
-            activeEnemy.GetComponent<Renderer>().material.color = Color.white;
+            enemy.GetComponent<Renderer>().material.color = Color.white;
         }
-    }
-
-    // set the active enemy
-    void SetActiveEnemy(GameObject newEnemy)
-    {
-        // if the target hasn't changed, return out
-        if (activeEnemy == newEnemy) return;
-        // reset old enemy's color
-        if (activeEnemy != null)
-        {
-            activeEnemy.GetComponent<Renderer>().material.color = Color.white;
-        }
-        // set active enemy to new one
-        activeEnemy = newEnemy;
     }
 }

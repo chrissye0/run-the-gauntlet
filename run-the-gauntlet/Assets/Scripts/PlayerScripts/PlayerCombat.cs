@@ -60,11 +60,11 @@ public class PlayerCombat : MonoBehaviour
     void Punch(ArduinoConnector.Hand hand, ArduinoConnector.PunchType punchType)
     {
         // set target to the active enemy
-        GameObject targetEnemy = targeting.ActiveEnemy;
+        GameObject activeEnemy = targeting.ActiveEnemy;
         // return out if nothing found
-        if (targetEnemy == null) return;
+        if (activeEnemy == null) return;
         // destroy target enemy
-        Destroy(targetEnemy);
+        Destroy(activeEnemy);
         // add to score
         gameManager.score += 100;
     }

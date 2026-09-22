@@ -5,7 +5,6 @@ public class PlayerMovement : MonoBehaviour
 
     public float moveSpeed = 1.0f;
     public float rotationSpeed = 3.0f;
-    private GameObject targetEnemy;
     private PlayerTargeting targeting;
 
 
@@ -18,7 +17,7 @@ public class PlayerMovement : MonoBehaviour
     void Update()
     {
         // find active enemy from targeting
-        GameObject targetEnemy = targeting.ActiveEnemy;
+        GameObject targetEnemy = targeting.TargetEnemy;
         // return out if nothing found
         if (targetEnemy == null) return;
         // navigate to target
