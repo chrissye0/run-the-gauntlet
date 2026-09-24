@@ -15,6 +15,8 @@ public class PlayerCombat : MonoBehaviour
     InputAction blockAction;
     public GameManager gameManager;
     private PlayerTargeting targeting;
+    // to see if actively blocking
+    public bool blocking;
 
     // for hardware connection
     private ArduinoConnector arduinoConnector;
@@ -26,6 +28,9 @@ public class PlayerCombat : MonoBehaviour
 
         // initialize inputs and set actions
         playerInput = GetComponent<PlayerInput>();
+
+        // initialize blocking to false
+        blocking = false;
 
         // get hardware output
         arduinoConnector = GetComponent<ArduinoConnector>();
@@ -54,6 +59,7 @@ public class PlayerCombat : MonoBehaviour
         rightUppercutAction.performed += OnRightUppercut;
 
         blockAction.performed += OnBlock;
+        blockAction.canceled += OnBlockReleased;
     }
 
     // attack the active enemy in attacking range
@@ -123,5 +129,11 @@ public class PlayerCombat : MonoBehaviour
     void OnBlock(InputAction.CallbackContext context)
     {
         Debug.Log("Block");
+        blocking = true;
+    }
+
+    void OnBlockReleased(InputAction.CallbackContext context)
+    {
+        blocking = false;
     }
 }

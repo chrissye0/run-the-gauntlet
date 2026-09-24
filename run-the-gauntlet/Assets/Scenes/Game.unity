@@ -463,6 +463,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawner
   enemyPrefab: {fileID: 2639702559140887953, guid: 2cc609d23eac80d4780b9dcc99b25e08, type: 3}
   player: {fileID: 1431666569}
+  gameManager: {fileID: 147669044}
   maxEnemyCount: 5
 --- !u!4 &373013088
 Transform:
@@ -1935,7 +1936,6 @@ GameObject:
   - component: {fileID: 1431666569}
   - component: {fileID: 2140801591}
   - component: {fileID: 2140801590}
-  - component: {fileID: 2140801589}
   - component: {fileID: 2140801588}
   - component: {fileID: 2140801587}
   - component: {fileID: 2140801592}
@@ -1993,18 +1993,6 @@ MonoBehaviour:
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
---- !u!114 &2140801589
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2140801586}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e2c59d936ea4fb84ca6ee96672413e93, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Player
 --- !u!114 &2140801590
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2018,6 +2006,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCombat
   gameManager: {fileID: 147669044}
+  blocking: 0
 --- !u!114 &2140801591
 MonoBehaviour:
   m_ObjectHideFlags: 0
