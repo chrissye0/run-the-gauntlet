@@ -80,49 +80,41 @@ public class PlayerCombat : MonoBehaviour
 
     void OnLeftJab(InputAction.CallbackContext context)
     {
-        Debug.Log("Left Jab");
         Punch(ArduinoConnector.Hand.Left, ArduinoConnector.PunchType.Jab);
     }
 
     void OnLeftCross(InputAction.CallbackContext context)
     {
-        Debug.Log("Left Cross");
         Punch(ArduinoConnector.Hand.Left, ArduinoConnector.PunchType.Cross);
     }
 
     void OnLeftHook(InputAction.CallbackContext context)
     {
-        Debug.Log("Left Hook");
         Punch(ArduinoConnector.Hand.Left, ArduinoConnector.PunchType.Hook);
     }
 
     void OnLeftUppercut(InputAction.CallbackContext context)
     {
-        Debug.Log("Left Uppercut");
         Punch(ArduinoConnector.Hand.Left, ArduinoConnector.PunchType.Uppercut);
     }
 
     void OnRightJab(InputAction.CallbackContext context)
     {
-        Debug.Log("Right Jab");
         Punch(ArduinoConnector.Hand.Right, ArduinoConnector.PunchType.Jab);
     }
 
     void OnRightCross(InputAction.CallbackContext context)
     {
-        Debug.Log("Right Cross");
         Punch(ArduinoConnector.Hand.Right, ArduinoConnector.PunchType.Cross);
     }
 
     void OnRightHook(InputAction.CallbackContext context)
     {
-        Debug.Log("Right Hook");
         Punch(ArduinoConnector.Hand.Right, ArduinoConnector.PunchType.Hook);
     }
 
     void OnRightUppercut(InputAction.CallbackContext context)
     {
-        Debug.Log("Right Uppercut");
         Punch(ArduinoConnector.Hand.Right, ArduinoConnector.PunchType.Uppercut);
     }
 

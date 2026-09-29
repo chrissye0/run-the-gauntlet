@@ -34,7 +34,7 @@ public class EnemyCombat : MonoBehaviour
 
     void Attack()
     {
-        Debug.Log("Attacking player!");
+        //Debug.Log("Attacking player!");
         if(GetComponent<Renderer>().material.color == Color.white)
         {
             GetComponent<Renderer>().material.color = Color.yellow;

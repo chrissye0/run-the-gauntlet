@@ -4,318 +4,369 @@ using UnityEngine;
 
 public class ArduinoConnector : MonoBehaviour
 {
-    // arguments are port number and baud rate (ADJUST AS NEEDED)
     private SerialPort leftSerial = new SerialPort("COM5", 115200);
     private SerialPort rightSerial = new SerialPort("COM6", 115200);
 
-    //picking up on punch events (connect to PlayerCombat)
     public enum PunchType
     {
-        Jab,
-        Cross,
-        Hook,
-        Uppercut
+        Jab, Cross, Hook, Uppercut
     }
+
     public enum Hand
     {
-        Left,
-        Right
+        Left, Right
     }
+
     public event Action<Hand, PunchType> PunchDetected;
 
-    // time in between punches
-    public float punchCooldown = 0.8f;
-
-    // TRACKING PUNCH STATES
     private enum PunchState
     {
         Waiting,
-        DetectingPunch,
+        Windup,
+        Punching,
         Cooldown
     }
 
-    private class PunchTracker
-    {
-        // initialize punch state to waiting
-        public PunchState state = PunchState.Waiting;
-        // to track time that has passed
-        public float cooldownTimer = 0f;
-        // Accel X
-        public float accelXMin = 0f;
-        public float accelXMax = 0f;
-        // Accel Y
-        public float accelYMin = 0f;
-        public float accelYMax = 0f;
-        // Accel Z
-        public float accelZMin = 0f;
-        public float accelZMax = 0f;
-        // Gyro X
-        public float gyroXMin = 0f;
-        public float gyroXMax = 0f;
-        // Gyro Y
-        public float gyroYMin = 0f;
-        public float gyroYMax = 0f;
-        // Gyro Z
-        public float gyroZMin = 0f;
-        public float gyroZMax = 0f;
-    }
+    private PunchState leftState = PunchState.Waiting;
+    private PunchState rightState = PunchState.Waiting;
 
-    // create independent trackers for each glove
-    private PunchTracker leftTracker = new PunchTracker();
-    private PunchTracker rightTracker = new PunchTracker();
 
-    // threshold for when accelX peaks (the forward jabbing motion)
-    public float accelXPunchThreshold = 1f;
+    // LEFT HAND THRESHOLDS
+    [Header("Left Hand Thresholds")]
+    // Jab
+    public float leftJabAccelX = -5f;
+    // Cross
+    public float leftCrossAccelX = -4f;
+    public float leftCrossGyroX = 800f;
+    // Hook
+    public float leftHookAccelY = 2f;
+    public float leftHookAccelZ = -2f;
+    // Uppercut
+    public float leftUppercutAccelY = 2f;
+    public float leftUppercutAccelZ = -8f;
 
-    // threshold for when accelY peaks
-    public float accelYPunchThreshold = 2f;
+    // RIGHT HAND THRESHOLDS
+    [Header("Right Hand Thresholds")]
+    // Jab
+    public float rightJabAccelX = -5f;
+    // Cross
+    public float rightCrossAccelX = -4f;
+    public float rightCrossGyroX = 800f;
+    // Hook
+    public float rightHookAccelY = 2f;
+    public float rightHookAccelZ = -5f;
+    // Uppercut
+    public float rightUppercutAccelY = 2f;
+    public float rightUppercutAccelZ = -8f;
 
-    // threshold for when accelZ peaks
-    public float accelZPunchThreshold = 0.3f;
+    // TIMING
+    [Header("Timing")]
+    // time for collecting sensor data
+    public float maxPunchDuration = 0.20f;
+    // punch cooldown
+    public float cooldownDuration = 0.70f;
+    private float leftCooldownTimer = 0f;
+    private float rightCooldownTimer = 0f;
 
-    // threshold for gyroX range (for detecting arm rotation in crosses)
-    public float gyroXPunchThreshold = 350f;
+    // left hand detection data
+    private float leftPeakAccelY;
+    private float leftMinAccelX;
+    private float leftMinAccelZ;
+    private float leftPeakGyroX;
+    private float leftDetectionStartTime;
 
-    // threshold for gyroY range
-    public float gyroYPunchThreshold = 100f;
+    // right hand detection data
+    private float rightPeakAccelY;
+    private float rightMinAccelX;
+    private float rightMinAccelZ;
+    private float rightPeakGyroX;
+    private float rightDetectionStartTime;
 
-    // threshold for gyroZ range
-    public float gyroZPunchThreshold = 250f;
-
-    void Start()
+    private void Start()
     {
         leftSerial.Open();
         rightSerial.Open();
+
         // fixes serial connection problem
         leftSerial.DtrEnable = true;
         rightSerial.DtrEnable = true;
-        // time in ms that the serial will wait to read the command
+
         leftSerial.ReadTimeout = 50;
         rightSerial.ReadTimeout = 50;
+
         Debug.Log("Left serial opened: " + leftSerial.IsOpen);
         Debug.Log("Right serial opened: " + leftSerial.IsOpen);
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        // PARSING ARDUINO DATA
-        string leftData;
-        string rightData;
-        try
+        if (leftSerial == null || !leftSerial.IsOpen || rightSerial == null || !rightSerial.IsOpen) return;
+        while (leftSerial.BytesToRead > 0)
         {
-            leftData = leftSerial.ReadLine();
-            rightData = rightSerial.ReadLine();
+            try
+            {
+                ProcessSensorData(leftSerial.ReadLine());
+            }
+            catch (TimeoutException)
+            {
+                break;
+            }
         }
-        catch (TimeoutException)
+        while (rightSerial.BytesToRead > 0)
         {
+            try
+            {
+                ProcessSensorData(rightSerial.ReadLine());
+            }
+            catch (TimeoutException)
+            {
+                break;
+            }
+        }
+        // check cooldown
+        if (leftState == PunchState.Cooldown)
+        {
+            leftCooldownTimer -= Time.deltaTime;
+            if (leftCooldownTimer <= 0f)
+            {
+                leftCooldownTimer = 0f;
+                leftState = PunchState.Waiting;
+            }
+        }
+        if (rightState == PunchState.Cooldown)
+        {
+            rightCooldownTimer -= Time.deltaTime;
+            if (rightCooldownTimer <= 0f)
+            {
+                rightCooldownTimer = 0f;
+                rightState = PunchState.Waiting;
+            }
+        }
+    }
+
+    private void ProcessSensorData(string line)
+    {
+        string[] values = line.Trim().Split(',');
+        // if not the right number of values
+        if (values.Length < 8) return;
+        // parse into floats
+        if (!float.TryParse(values[2], out float accelX)) return;
+        if (!float.TryParse(values[3], out float accelY)) return;
+        if (!float.TryParse(values[4], out float accelZ)) return;
+        if (!float.TryParse(values[5], out float gyroX)) return;
+        if (!float.TryParse(values[6], out float gyroY)) return;
+        if (!float.TryParse(values[7], out float gyroZ)) return;
+
+        if (values[0].ToString() == "LEFT") ProcessLeftHand(accelX, accelY, accelZ, gyroX);
+        else if (values[0].ToString() == "RIGHT") ProcessRightHand(accelX, accelY, accelZ, gyroX);
+    }
+
+    // process data from left hand
+    private void ProcessLeftHand(float accelX, float accelY, float accelZ, float gyroX)
+    {
+        // return out if in cooldown
+        if (leftState == PunchState.Cooldown) return;
+
+        // if waiting for input
+        if (leftState == PunchState.Waiting)
+        {
+            // if the start of a movement has been detected
+            if (accelX < leftCrossAccelX || accelZ < leftHookAccelZ || (accelY > leftUppercutAccelY && accelZ < leftUppercutAccelZ))
+            {
+                StartLeftDetection(accelX, accelY, accelZ, gyroX);
+            }
             return;
         }
-        string[] leftValues = leftData.Split(",");
-        string[] rightValues = rightData.Split(",");
-        // return out if not right amount
-        if (leftValues.Length != 8) return;
-        if (rightValues.Length != 8) return;
-        // try to parse values, return out if it fails
-        //if (!long.TryParse(leftValues[1], out long leftTime)) return;
-        if (!float.TryParse(leftValues[2], out float leftAccelX)) return;
-        if (!float.TryParse(leftValues[3], out float leftAccelY)) return;
-        if (!float.TryParse(leftValues[4], out float leftAccelZ)) return;
-        if (!float.TryParse(leftValues[5], out float leftGyroX)) return;
-        if (!float.TryParse(leftValues[6], out float leftGyroY)) return;
-        if (!float.TryParse(leftValues[7], out float leftGyroZ)) return;
-        //if (!long.TryParse(rightValues[1], out long rightTime)) return;
-        if (!float.TryParse(rightValues[2], out float rightAccelX)) return;
-        if (!float.TryParse(rightValues[3], out float rightAccelY)) return;
-        if (!float.TryParse(rightValues[4], out float rightAccelZ)) return;
-        if (!float.TryParse(rightValues[5], out float rightGyroX)) return;
-        if (!float.TryParse(rightValues[6], out float rightGyroY)) return;
-        if (!float.TryParse(rightValues[7], out float rightGyroZ)) return;
-        // use these values + hand type + tracker to detect punches
-        DetectPunch(Hand.Left, leftAccelX, leftAccelY, leftAccelZ, leftGyroX, leftGyroY, leftGyroZ, leftTracker);
-        DetectPunch(Hand.Right, rightAccelX, rightAccelY, rightAccelZ, rightGyroX, rightGyroY, rightGyroZ, rightTracker);
-    }
-
-    /**
-    * CODE FOR PUNCH DETECTION
-    * take in all needed values for jab, cross, hook, and uppercut
-    * use a switch statement and PunchState states to differentiate
-    */
-    private void DetectPunch(Hand hand, float accelX, float accelY, float accelZ, float gyroX, float gyroY, float gyroZ, PunchTracker tracker)
-    {
-        switch (tracker.state)
+        // if in windup state
+        if (leftState == PunchState.Windup)
         {
-            // initializing values once accelX reaches a threshold
-            case PunchState.Waiting:
-                if (accelX > accelXPunchThreshold)
-                {
-                    // initialize tracker values
-                    tracker.accelXMin = accelX;
-                    tracker.accelXMax = accelX;
-                    tracker.accelYMin = accelY;
-                    tracker.accelYMax = accelY;
-                    tracker.accelZMin = accelZ;
-                    tracker.accelZMax = accelZ;
-                    tracker.gyroXMin = gyroX;
-                    tracker.gyroXMax = gyroX;
-                    tracker.gyroYMin = gyroY;
-                    tracker.gyroYMax = gyroY;
-                    tracker.gyroZMin = gyroZ;
-                    tracker.gyroZMax = gyroZ;
-                    // go into detecting punch state
-                    tracker.state = PunchState.DetectingPunch;
-                }
-                break;
-            // detect what punch is thrown
-            case PunchState.DetectingPunch:
-                // update min and max values
-                if (accelX < tracker.accelXMin)
-                {
-                    tracker.accelXMin = accelX;
-                }
-                if (accelX > tracker.accelXMax)
-                {
-                    tracker.accelXMax = accelX;
-                }
-                if (accelY < tracker.accelYMin)
-                {
-                    tracker.accelYMin = accelY;
-                }
-                if (accelY > tracker.accelYMax)
-                {
-                    tracker.accelYMax = accelY;
-                }
-                if (accelZ < tracker.accelZMin)
-                {
-                    tracker.accelZMin = accelZ;
-                }
-                if (accelZ > tracker.accelZMax)
-                {
-                    tracker.accelZMax = accelZ;
-                }
-                if (gyroX < tracker.gyroXMin)
-                {
-                    tracker.gyroXMin = gyroX;
-                }
-                if (gyroX > tracker.gyroXMax)
-                {
-                    tracker.gyroXMax = gyroX;
-                }
-                if (gyroY < tracker.gyroYMin)
-                {
-                    tracker.gyroYMin = gyroY;
-                }
-                if (gyroY > tracker.gyroYMax)
-                {
-                    tracker.gyroYMax = gyroY;
-                }
-                if (gyroZ < tracker.gyroZMin)
-                {
-                    tracker.gyroZMin = gyroZ;
-                }
-                if (gyroZ > tracker.gyroZMax)
-                {
-                    tracker.gyroZMax = gyroZ;
-                }
-                // get ranges of everything
-                float accelXRange = tracker.accelXMax - tracker.accelXMin;
-                float accelYRange = tracker.accelYMax - tracker.accelYMin;
-                float accelZRange = tracker.accelZMax - tracker.accelZMin;
-                float gyroXRange = tracker.gyroXMax - tracker.gyroXMin;
-                float gyroYRange = tracker.gyroYMax - tracker.gyroYMin;
-                float gyroZRange = tracker.gyroZMax - tracker.gyroZMin;
-                // if accelX passes threshold (this would be a forward motion)
-                if (accelXRange > accelXPunchThreshold)
-                {
-                    Debug.Log("Accel X Range: " + accelXRange);
-                    //Debug.Log("Accel Y Range: " + accelYRange);
-                    //Debug.Log("Accel Z Range: " + accelZRange);
-                    Debug.Log("Gyro X Range: " + gyroXRange);
-                    //Debug.Log("Gyro Y Range: " + gyroYRange);
-                    //Debug.Log("Gyro Z Range: " + gyroZRange);
-
-                    // check gyroX for crosses and uppercuts
-                    if (gyroXRange > gyroXPunchThreshold)
-                    {
-                        if (gyroYRange > gyroYPunchThreshold && accelZRange > accelZPunchThreshold)
-                        {
-                            if (hand == Hand.Left)
-                            {
-                                Debug.Log("LEFT UPPERCUT DETECTED!");
-                                PunchDetected?.Invoke(Hand.Left, PunchType.Uppercut);
-                            }
-                            else if (hand == Hand.Right)
-                            {
-                                Debug.Log("RIGHT UPPERCUT DETECTED!");
-                                PunchDetected?.Invoke(Hand.Right, PunchType.Uppercut);
-                            }
-                        }
-                        else
-                        {
-                            if (hand == Hand.Left)
-                            {
-                                Debug.Log("LEFT CROSS DETECTED!");
-                                PunchDetected?.Invoke(Hand.Left, PunchType.Cross);
-                            }
-                            else if (hand == Hand.Right)
-                            {
-                                Debug.Log("RIGHT CROSS DETECTED!");
-                                PunchDetected?.Invoke(Hand.Right, PunchType.Cross);
-                            }
-                        }
-                        tracker.state = PunchState.Cooldown;
-                        tracker.cooldownTimer = Time.time + punchCooldown;
-                        break;
-                    }
-                    else if (gyroYRange > gyroYPunchThreshold && accelZRange > accelZPunchThreshold)
-                    {
-                        if (hand == Hand.Left)
-                        {
-                            Debug.Log("LEFT HOOK DETECTED!");
-                            PunchDetected?.Invoke(Hand.Left, PunchType.Hook);
-                        }
-                        else if (hand == Hand.Right)
-                        {
-                            Debug.Log("RIGHT HOOK DETECTED!");
-                            PunchDetected?.Invoke(Hand.Right, PunchType.Hook);
-                        }
-                        tracker.state = PunchState.Cooldown;
-                        tracker.cooldownTimer = Time.time + punchCooldown;
-                        break;
-                    }
-                    else
-                    {
-                        // if no gyro fluctuation
-                        if (hand == Hand.Left)
-                        {
-                            Debug.Log("LEFT JAB DETECTED!");
-                            PunchDetected?.Invoke(Hand.Left, PunchType.Jab);
-                        }
-                        else if (hand == Hand.Right)
-                        {
-                            Debug.Log("RIGHT JAB DETECTED!");
-                            PunchDetected?.Invoke(Hand.Right, PunchType.Jab);
-                        }
-                        tracker.state = PunchState.Cooldown;
-                        tracker.cooldownTimer = Time.time + punchCooldown;
-                        break;
-                    }
-                }
-                break;
-            case PunchState.Cooldown:
-                // go into cooldown - wait until cooldown timer passes and accelX goes back to normal
-                if (Time.time >= tracker.cooldownTimer && Mathf.Abs(accelX) < accelXPunchThreshold)
-                {
-                    tracker.state = PunchState.Waiting;
-                }
-                break;
+            UpdateLeftDetection(accelX, accelY, accelZ, gyroX);
+            // check if enough time has passed
+            if (Time.time - leftDetectionStartTime >= maxPunchDuration)
+            {
+                ClassifyLeftPunch();
+            }
         }
     }
 
-    // close serial when app is closed
-    private void OnApplicationQuit()
+    // start left punch detection
+    private void StartLeftDetection(float accelX, float accelY, float accelZ, float gyroX)
     {
-        leftSerial.Close();
-        rightSerial.Close();
+        leftState = PunchState.Windup;
+        leftDetectionStartTime = Time.time;
+        // initialize values
+        leftPeakAccelY = accelY;
+        leftMinAccelX = accelX;
+        leftMinAccelZ = accelZ;
+        leftPeakGyroX = Mathf.Abs(gyroX);
+    }
+    // update left detection
+    private void UpdateLeftDetection(float accelX, float accelY, float accelZ, float gyroX)
+    {
+        // strongest positive accelY
+        leftPeakAccelY = Mathf.Max(leftPeakAccelY, accelY);
+        // strongest negative accelX
+        leftMinAccelX = Mathf.Min(leftMinAccelX, accelX);
+        // strongest negative accelZ
+        leftMinAccelZ = Mathf.Min(leftMinAccelZ, accelZ);
+        // biggest gyroX magnitude
+        leftPeakGyroX = Mathf.Max(leftPeakGyroX, Mathf.Abs(gyroX));
+    }
+
+    // classify left punch
+    private void ClassifyLeftPunch()
+    {
+        float jabScore = 0f;
+        float crossScore = 0f;
+        float hookScore = 0f;
+        float uppercutScore = 0f;
+
+        // UPPERCUT
+        if (leftMinAccelZ < leftUppercutAccelZ) uppercutScore += 4f;
+        if (leftPeakAccelY > leftUppercutAccelY) uppercutScore += 2f;
+
+        // JAB
+        // check for big accelX
+        if (leftMinAccelX < leftJabAccelX) jabScore += 5f;
+
+        // CROSS
+        // check for medium accelX and big gyroX
+        if (leftMinAccelX < leftCrossAccelX) crossScore += 3f;
+        if (leftPeakGyroX > leftCrossGyroX) crossScore += 3f;
+
+        // HOOK
+        if (leftMinAccelZ < leftHookAccelZ) hookScore += 3f;
+        if (leftPeakAccelY > leftHookAccelY) hookScore += 2f;
+
+        // calculate the highest score
+        float highestScore = Mathf.Max(jabScore, crossScore, hookScore, uppercutScore);
+        // return out if nothing classified
+        if (highestScore < 3f)
+        {
+            leftState = PunchState.Waiting;
+            return;
+        }
+        if (uppercutScore == highestScore) ExecutePunch(Hand.Left, PunchType.Uppercut);
+        else if (hookScore == highestScore) ExecutePunch(Hand.Left, PunchType.Hook);
+        else if (crossScore == highestScore) ExecutePunch(Hand.Left, PunchType.Cross);
+        else if (jabScore == highestScore) ExecutePunch(Hand.Left, PunchType.Jab);
+    }
+
+
+    // RIGHT HAND
+    // process data from right hand
+    private void ProcessRightHand(float accelX, float accelY, float accelZ, float gyroX)
+    {
+        // return out if in cooldown
+        if (rightState == PunchState.Cooldown) return;
+
+        // if waiting for input
+        if (rightState == PunchState.Waiting)
+        {
+            // if the start of a movement has been detected
+            if (accelX < rightCrossAccelX || accelZ < rightHookAccelZ || (accelY > rightUppercutAccelY && accelZ < rightUppercutAccelZ))
+            {
+                StartRightDetection(accelX, accelY, accelZ, gyroX);
+            }
+            return;
+        }
+        // if in windup state
+        if (rightState == PunchState.Windup)
+        {
+            UpdateRightDetection(accelX, accelY, accelZ, gyroX);
+            // check if enough time has passed
+            if (Time.time - rightDetectionStartTime >= maxPunchDuration)
+            {
+                ClassifyRightPunch();
+            }
+        }
+    }
+
+    // start righ punch detection
+    private void StartRightDetection(float accelX, float accelY, float accelZ, float gyroX)
+    {
+        rightState = PunchState.Windup;
+        rightDetectionStartTime = Time.time;
+        // initialize values
+        rightPeakAccelY = accelY;
+        rightMinAccelX = accelX;
+        rightMinAccelZ = accelZ;
+        rightPeakGyroX = Mathf.Abs(gyroX);
+    }
+    // update right detection
+    private void UpdateRightDetection(float accelX, float accelY, float accelZ, float gyroX)
+    {
+        // strongest positive accelY
+        rightPeakAccelY = Mathf.Max(rightPeakAccelY, accelY);
+        // strongest negative accelX
+        rightMinAccelX = Mathf.Min(rightMinAccelX, accelX);
+        // strongest negative accelZ
+        rightMinAccelZ = Mathf.Min(rightMinAccelZ, accelZ);
+        // biggest gyroX magnitude
+        rightPeakGyroX = Mathf.Max(rightPeakGyroX, Mathf.Abs(gyroX));
+    }
+
+    // classify right punch
+    private void ClassifyRightPunch()
+    {
+        float jabScore = 0f;
+        float crossScore = 0f;
+        float hookScore = 0f;
+        float uppercutScore = 0f;
+
+        Debug.Log("accelY: " + rightPeakAccelY);
+        Debug.Log("accelZ: " + rightMinAccelZ);
+
+        // UPPERCUT
+        if (rightMinAccelZ < rightUppercutAccelZ) uppercutScore += 4f;
+        if (rightPeakAccelY > rightUppercutAccelY) uppercutScore += 2f;
+
+        // JAB
+        // check for big accelX
+        if (rightMinAccelX < rightJabAccelX) jabScore += 5f;
+
+        // CROSS
+        // check for medium accelX and big gyroX
+        if (rightMinAccelX < rightCrossAccelX) crossScore += 3f;
+        if (rightPeakGyroX > rightCrossGyroX) crossScore += 3f;
+
+        // HOOK
+        if (rightMinAccelZ < rightHookAccelZ) hookScore += 3f;
+        if (rightPeakAccelY > rightHookAccelY) hookScore += 2f;
+
+        // calculate the highest score
+        float highestScore = Mathf.Max(jabScore, crossScore, hookScore, uppercutScore);
+        // return out if nothing classified
+        if (highestScore < 3f)
+        {
+            rightState = PunchState.Waiting;
+            return;
+        }
+        if (uppercutScore == highestScore) ExecutePunch(Hand.Right, PunchType.Uppercut);
+        else if (hookScore == highestScore) ExecutePunch(Hand.Right, PunchType.Hook);
+        else if (crossScore == highestScore) ExecutePunch(Hand.Right, PunchType.Cross);
+        else if (jabScore == highestScore) ExecutePunch(Hand.Right, PunchType.Jab);
+    }
+
+    // execute punch and go into cooldown
+    private void ExecutePunch(Hand hand, PunchType punch)
+    {
+        Debug.Log(hand + " " + punch + " executed");
+        if (hand == Hand.Left)
+        {
+            leftState = PunchState.Cooldown;
+            leftCooldownTimer = cooldownDuration;
+        }
+        else
+        {
+            rightState = PunchState.Cooldown;
+            rightCooldownTimer = cooldownDuration;
+        }
+        PunchDetected?.Invoke(hand, punch);
+    }
+    private void OnDestroy()
+    {
+        if (leftSerial != null && leftSerial.IsOpen) leftSerial.Close();
+        if (rightSerial != null && rightSerial.IsOpen) rightSerial.Close();
     }
 }
