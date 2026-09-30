@@ -82,6 +82,17 @@ public class ArduinoConnector : MonoBehaviour
     private float rightPeakGyroX;
     private float rightDetectionStartTime;
 
+    // BLOCKING THRESHOLDS (ADJUST AS NEEDED)
+    [Header("Blocking")]
+    // threshold to start blocking
+    public float blockAccelX = 3f;
+    // threshold to stop blocking (if blocking)
+    public float unblockAccelX = 3f;
+    // latest accelX received from each sensor
+    private float latestLeftAccelX = 0f;
+    private float latestRightAccelX = 0f;
+    private PlayerCombat playerCombat;
+
     private void Start()
     {
         leftSerial.Open();
@@ -93,6 +104,8 @@ public class ArduinoConnector : MonoBehaviour
 
         leftSerial.ReadTimeout = 50;
         rightSerial.ReadTimeout = 50;
+
+        playerCombat = GetComponent<PlayerCombat>();
 
         Debug.Log("Left serial opened: " + leftSerial.IsOpen);
         Debug.Log("Right serial opened: " + leftSerial.IsOpen);
@@ -167,50 +180,46 @@ public class ArduinoConnector : MonoBehaviour
         // return out if in cooldown
         if (leftState == PunchState.Cooldown) return;
 
+        // update the latest blocking sensor value and update blocking state
+        latestLeftAccelX = accelX;
+        UpdateBlockingState();
+
+        // return out if currently blocking
+        if (playerCombat.blocking) return;
+
         // if waiting for input
         if (leftState == PunchState.Waiting)
         {
             // if the start of a movement has been detected
             if (accelX < leftCrossAccelX || accelZ < leftHookAccelZ || (accelY > leftUppercutAccelY && accelZ < leftUppercutAccelZ))
             {
-                StartLeftDetection(accelX, accelY, accelZ, gyroX);
+                leftState = PunchState.Windup;
+                leftDetectionStartTime = Time.time;
+                // initialize values
+                leftPeakAccelY = accelY;
+                leftMinAccelX = accelX;
+                leftMinAccelZ = accelZ;
+                leftPeakGyroX = Mathf.Abs(gyroX);
             }
             return;
         }
         // if in windup state
         if (leftState == PunchState.Windup)
         {
-            UpdateLeftDetection(accelX, accelY, accelZ, gyroX);
+            // strongest positive accelY
+            leftPeakAccelY = Mathf.Max(leftPeakAccelY, accelY);
+            // strongest negative accelX
+            leftMinAccelX = Mathf.Min(leftMinAccelX, accelX);
+            // strongest negative accelZ
+            leftMinAccelZ = Mathf.Min(leftMinAccelZ, accelZ);
+            // biggest gyroX magnitude
+            leftPeakGyroX = Mathf.Max(leftPeakGyroX, Mathf.Abs(gyroX));
             // check if enough time has passed
             if (Time.time - leftDetectionStartTime >= maxPunchDuration)
             {
                 ClassifyLeftPunch();
             }
         }
-    }
-
-    // start left punch detection
-    private void StartLeftDetection(float accelX, float accelY, float accelZ, float gyroX)
-    {
-        leftState = PunchState.Windup;
-        leftDetectionStartTime = Time.time;
-        // initialize values
-        leftPeakAccelY = accelY;
-        leftMinAccelX = accelX;
-        leftMinAccelZ = accelZ;
-        leftPeakGyroX = Mathf.Abs(gyroX);
-    }
-    // update left detection
-    private void UpdateLeftDetection(float accelX, float accelY, float accelZ, float gyroX)
-    {
-        // strongest positive accelY
-        leftPeakAccelY = Mathf.Max(leftPeakAccelY, accelY);
-        // strongest negative accelX
-        leftMinAccelX = Mathf.Min(leftMinAccelX, accelX);
-        // strongest negative accelZ
-        leftMinAccelZ = Mathf.Min(leftMinAccelZ, accelZ);
-        // biggest gyroX magnitude
-        leftPeakGyroX = Mathf.Max(leftPeakGyroX, Mathf.Abs(gyroX));
     }
 
     // classify left punch
@@ -252,7 +261,6 @@ public class ArduinoConnector : MonoBehaviour
         else if (jabScore == highestScore) ExecutePunch(Hand.Left, PunchType.Jab);
     }
 
-
     // RIGHT HAND
     // process data from right hand
     private void ProcessRightHand(float accelX, float accelY, float accelZ, float gyroX)
@@ -260,50 +268,46 @@ public class ArduinoConnector : MonoBehaviour
         // return out if in cooldown
         if (rightState == PunchState.Cooldown) return;
 
+        // update the latest blocking sensor value and update blocking state
+        latestRightAccelX = accelX;
+        UpdateBlockingState();
+
+        // return out if currently blocking
+        if (playerCombat.blocking) return;
+
         // if waiting for input
         if (rightState == PunchState.Waiting)
         {
             // if the start of a movement has been detected
             if (accelX < rightCrossAccelX || accelZ < rightHookAccelZ || (accelY > rightUppercutAccelY && accelZ < rightUppercutAccelZ))
             {
-                StartRightDetection(accelX, accelY, accelZ, gyroX);
+                rightState = PunchState.Windup;
+                rightDetectionStartTime = Time.time;
+                // initialize values
+                rightPeakAccelY = accelY;
+                rightMinAccelX = accelX;
+                rightMinAccelZ = accelZ;
+                rightPeakGyroX = Mathf.Abs(gyroX);
             }
             return;
         }
         // if in windup state
         if (rightState == PunchState.Windup)
         {
-            UpdateRightDetection(accelX, accelY, accelZ, gyroX);
+            // strongest positive accelY
+            rightPeakAccelY = Mathf.Max(rightPeakAccelY, accelY);
+            // strongest negative accelX
+            rightMinAccelX = Mathf.Min(rightMinAccelX, accelX);
+            // strongest negative accelZ
+            rightMinAccelZ = Mathf.Min(rightMinAccelZ, accelZ);
+            // biggest gyroX magnitude
+            rightPeakGyroX = Mathf.Max(rightPeakGyroX, Mathf.Abs(gyroX));
             // check if enough time has passed
             if (Time.time - rightDetectionStartTime >= maxPunchDuration)
             {
                 ClassifyRightPunch();
             }
         }
-    }
-
-    // start righ punch detection
-    private void StartRightDetection(float accelX, float accelY, float accelZ, float gyroX)
-    {
-        rightState = PunchState.Windup;
-        rightDetectionStartTime = Time.time;
-        // initialize values
-        rightPeakAccelY = accelY;
-        rightMinAccelX = accelX;
-        rightMinAccelZ = accelZ;
-        rightPeakGyroX = Mathf.Abs(gyroX);
-    }
-    // update right detection
-    private void UpdateRightDetection(float accelX, float accelY, float accelZ, float gyroX)
-    {
-        // strongest positive accelY
-        rightPeakAccelY = Mathf.Max(rightPeakAccelY, accelY);
-        // strongest negative accelX
-        rightMinAccelX = Mathf.Min(rightMinAccelX, accelX);
-        // strongest negative accelZ
-        rightMinAccelZ = Mathf.Min(rightMinAccelZ, accelZ);
-        // biggest gyroX magnitude
-        rightPeakGyroX = Mathf.Max(rightPeakGyroX, Mathf.Abs(gyroX));
     }
 
     // classify right punch
@@ -313,9 +317,6 @@ public class ArduinoConnector : MonoBehaviour
         float crossScore = 0f;
         float hookScore = 0f;
         float uppercutScore = 0f;
-
-        Debug.Log("accelY: " + rightPeakAccelY);
-        Debug.Log("accelZ: " + rightMinAccelZ);
 
         // UPPERCUT
         if (rightMinAccelZ < rightUppercutAccelZ) uppercutScore += 4f;
@@ -364,6 +365,33 @@ public class ArduinoConnector : MonoBehaviour
         }
         PunchDetected?.Invoke(hand, punch);
     }
+
+    private void UpdateBlockingState()
+    {
+        // if not currently blocking and both arms pass thresholds
+        if (!playerCombat.blocking && latestLeftAccelX > blockAccelX && latestRightAccelX > blockAccelX)
+        {
+            Debug.Log("blocking");
+            Debug.Log("left accelX: " + latestLeftAccelX);
+            Debug.Log("right accelX: " + latestRightAccelX);
+            playerCombat.blocking = true;
+            // reset punch states
+            leftState = PunchState.Waiting;
+            rightState = PunchState.Waiting;
+        }
+        // if unblocking
+        else if (playerCombat.blocking && latestLeftAccelX > unblockAccelX && latestRightAccelX > unblockAccelX)
+        {
+            Debug.Log("unblocking");
+            playerCombat.blocking = false;
+            Debug.Log("left accelX: " + latestLeftAccelX);
+            Debug.Log("right accelX: " + latestRightAccelX);
+            // reset punch states
+            leftState = PunchState.Waiting;
+            rightState = PunchState.Waiting;
+        }
+    }
+
     private void OnDestroy()
     {
         if (leftSerial != null && leftSerial.IsOpen) leftSerial.Close();
