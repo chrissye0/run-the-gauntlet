@@ -87,10 +87,12 @@ public class ArduinoConnector : MonoBehaviour
     // threshold to start blocking
     public float blockAccelX = 3f;
     // threshold to stop blocking (if blocking)
-    public float unblockAccelX = 3f;
+    public float unblockAccelX = -2f;
     // latest accelX received from each sensor
     private float latestLeftAccelX = 0f;
     private float latestRightAccelX = 0f;
+    public float blockCooldownDuration = 2f;
+    private float blockCooldownTimer = 0f;
     private PlayerCombat playerCombat;
 
     private void Start()
@@ -136,7 +138,7 @@ public class ArduinoConnector : MonoBehaviour
                 break;
             }
         }
-        // check cooldown
+        // check cooldowns
         if (leftState == PunchState.Cooldown)
         {
             leftCooldownTimer -= Time.deltaTime;
@@ -153,6 +155,14 @@ public class ArduinoConnector : MonoBehaviour
             {
                 rightCooldownTimer = 0f;
                 rightState = PunchState.Waiting;
+            }
+        }
+        if (blockCooldownTimer > 0f)
+        {
+            blockCooldownTimer -= Time.deltaTime;
+            if (blockCooldownTimer < 0f)
+            {
+                blockCooldownTimer = 0f;
             }
         }
     }
@@ -368,24 +378,24 @@ public class ArduinoConnector : MonoBehaviour
 
     private void UpdateBlockingState()
     {
+        // return out if on cooldown
+        if (!playerCombat.blocking && blockCooldownTimer > 0f) return;
         // if not currently blocking and both arms pass thresholds
         if (!playerCombat.blocking && latestLeftAccelX > blockAccelX && latestRightAccelX > blockAccelX)
         {
-            Debug.Log("blocking");
-            Debug.Log("left accelX: " + latestLeftAccelX);
-            Debug.Log("right accelX: " + latestRightAccelX);
+            Debug.Log("Blocking");
             playerCombat.blocking = true;
             // reset punch states
             leftState = PunchState.Waiting;
             rightState = PunchState.Waiting;
         }
         // if unblocking
-        else if (playerCombat.blocking && latestLeftAccelX > unblockAccelX && latestRightAccelX > unblockAccelX)
+        else if (playerCombat.blocking && latestLeftAccelX < unblockAccelX && latestRightAccelX < unblockAccelX)
         {
-            Debug.Log("unblocking");
+            Debug.Log("Unblocking");
             playerCombat.blocking = false;
-            Debug.Log("left accelX: " + latestLeftAccelX);
-            Debug.Log("right accelX: " + latestRightAccelX);
+            // start cooldown
+            blockCooldownTimer = blockCooldownDuration;
             // reset punch states
             leftState = PunchState.Waiting;
             rightState = PunchState.Waiting;
