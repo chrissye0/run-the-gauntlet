@@ -4,11 +4,13 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    public float score = 0;
+    public float score = 0f;
+    public float specialMeterValue, width, height;
     public float timeRemaining = 60f;
 
     public TMP_Text scoreText;
     public TMP_Text timerText;
+    public RectTransform specialMeter;
     public GameObject gameOverPanel;
 
     void Update()
@@ -27,6 +29,15 @@ public class GameManager : MonoBehaviour
             TimerEnded();
         }
         DisplayTime(timeRemaining);
+    }
+
+    public void SetSpecialMeterValue(float value)
+    {
+        specialMeterValue += value;
+        specialMeterValue = Mathf.Clamp(specialMeterValue, 0f, 100f);
+        specialMeter.sizeDelta = new Vector2((specialMeterValue / 100f) * width, height);
+        // do something here to indicate special
+        if (specialMeterValue == 100) Debug.Log("special ready!");
     }
 
     // format to minutes:seconds

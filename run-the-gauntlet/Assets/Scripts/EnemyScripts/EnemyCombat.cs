@@ -43,6 +43,7 @@ public class EnemyCombat : MonoBehaviour
         if (playerCombat.blocking)
         {
             Debug.Log("Blocked!");
+            gameManager.SetSpecialMeterValue(20f);
         }
         // to see if score won't go into negatives
         else if (gameManager.score >= damage)

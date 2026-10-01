@@ -69,6 +69,8 @@ public class PlayerCombat : MonoBehaviour
         GameObject activeEnemy = targeting.ActiveEnemy;
         // return out if nothing found
         if (activeEnemy == null) return;
+        // increase special meter by a little
+        gameManager.SetSpecialMeterValue(5f);
         // destroy target enemy
         Destroy(activeEnemy);
         // add to score
@@ -120,7 +122,6 @@ public class PlayerCombat : MonoBehaviour
 
     void OnBlock(InputAction.CallbackContext context)
     {
-        Debug.Log("Block");
         blocking = true;
     }
 
