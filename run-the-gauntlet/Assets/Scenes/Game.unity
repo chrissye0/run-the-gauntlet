@@ -287,7 +287,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
   score: 0
   specialMeterValue: 0
-  maxSpecialMeterValue: 100
   width: 400
   height: 30
   timeRemaining: 60
@@ -2088,6 +2087,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCombat
   gameManager: {fileID: 147669044}
   blocking: 0
+  specialRange: 10
 --- !u!114 &2140801591
 MonoBehaviour:
   m_ObjectHideFlags: 0

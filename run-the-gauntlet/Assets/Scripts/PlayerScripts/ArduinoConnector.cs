@@ -18,6 +18,8 @@ public class ArduinoConnector : MonoBehaviour
     }
 
     public event Action<Hand, PunchType> PunchDetected;
+    public event Action BlockDetected;
+    public event Action UnblockDetected;
 
     private enum PunchState
     {
@@ -388,6 +390,7 @@ public class ArduinoConnector : MonoBehaviour
             // reset punch states
             leftState = PunchState.Waiting;
             rightState = PunchState.Waiting;
+            BlockDetected.Invoke();
         }
         // if unblocking
         else if (playerCombat.blocking && latestLeftAccelX < unblockAccelX && latestRightAccelX < unblockAccelX)
@@ -399,6 +402,7 @@ public class ArduinoConnector : MonoBehaviour
             // reset punch states
             leftState = PunchState.Waiting;
             rightState = PunchState.Waiting;
+            UnblockDetected.Invoke();
         }
     }
 

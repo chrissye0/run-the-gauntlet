@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -17,6 +18,7 @@ public class PlayerCombat : MonoBehaviour
     private PlayerTargeting targeting;
     // to see if actively blocking
     public bool blocking;
+    public float specialRange = 5f;
 
     // for hardware connection
     private ArduinoConnector arduinoConnector;
@@ -35,6 +37,9 @@ public class PlayerCombat : MonoBehaviour
         // get hardware output
         arduinoConnector = GetComponent<ArduinoConnector>();
         arduinoConnector.PunchDetected += Punch;
+        arduinoConnector.BlockDetected += Block;
+        arduinoConnector.UnblockDetected += Unblock;
+
 
         leftJabAction = playerInput.actions.FindAction("Left Jab");
         leftCrossAction = playerInput.actions.FindAction("Left Cross");
@@ -75,6 +80,41 @@ public class PlayerCombat : MonoBehaviour
         Destroy(activeEnemy);
         // add to score
         gameManager.score += 100;
+    }
+
+    // for invoking from ArduinoConnector
+    void Block()
+    {
+        blocking = true;
+    }
+
+    void Unblock()
+    {
+        blocking = false;
+        if (gameManager.specialMeterValue == 100) Special();
+    }
+
+    // Destroy all enemies within a certain range
+    void Special()
+    {
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+        List<GameObject> inRangeEnemies = new List<GameObject>();
+        foreach (GameObject enemy in enemies)
+        {
+            // get distance between player and enemy
+            float distance = Vector3.Distance(transform.position, enemy.transform.position);
+            if (distance < specialRange)
+            {
+                inRangeEnemies.Add(enemy);
+            }
+        }
+        foreach (GameObject enemy in inRangeEnemies)
+        {
+            Destroy(enemy);
+            gameManager.score += 100;
+        }
+        gameManager.SetSpecialMeterValue(-100f);
+        Debug.Log("SPECIAL ATTACK!");
     }
 
     // in later iterations, also check for enemy armor and weaknesses in the below methods
@@ -122,11 +162,11 @@ public class PlayerCombat : MonoBehaviour
 
     void OnBlock(InputAction.CallbackContext context)
     {
-        blocking = true;
+        Block();
     }
 
     void OnBlockReleased(InputAction.CallbackContext context)
     {
-        blocking = false;
+        Unblock();
     }
 }
