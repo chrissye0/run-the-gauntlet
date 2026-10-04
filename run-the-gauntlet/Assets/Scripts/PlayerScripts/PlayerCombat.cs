@@ -20,6 +20,8 @@ public class PlayerCombat : MonoBehaviour
     public bool blocking;
     public float specialRange = 5f;
 
+    public Animator animator;
+
     // for hardware connection
     private ArduinoConnector arduinoConnector;
 
@@ -68,12 +70,14 @@ public class PlayerCombat : MonoBehaviour
     }
 
     // attack the active enemy in attacking range
-    void Punch(ArduinoConnector.Hand hand, ArduinoConnector.PunchType punchType)
+    void Punch(ArduinoConnector.Hand hand, ArduinoConnector.PunchType punchType, string animation)
     {
         // set target to the active enemy
         GameObject activeEnemy = targeting.ActiveEnemy;
         // return out if nothing found
         if (activeEnemy == null) return;
+        // trigger animation
+        animator.SetTrigger(animation);
         // increase special meter by a little
         gameManager.SetSpecialMeterValue(5f);
         // destroy target enemy
@@ -122,42 +126,50 @@ public class PlayerCombat : MonoBehaviour
 
     void OnLeftJab(InputAction.CallbackContext context)
     {
-        Punch(ArduinoConnector.Hand.Left, ArduinoConnector.PunchType.Jab);
+        Punch(ArduinoConnector.Hand.Left, ArduinoConnector.PunchType.Jab, "JabL");
+        Debug.Log("left jab");
     }
 
     void OnLeftCross(InputAction.CallbackContext context)
     {
-        Punch(ArduinoConnector.Hand.Left, ArduinoConnector.PunchType.Cross);
+        Punch(ArduinoConnector.Hand.Left, ArduinoConnector.PunchType.Cross, "CrossL");
+        Debug.Log("left cross");
     }
 
     void OnLeftHook(InputAction.CallbackContext context)
     {
-        Punch(ArduinoConnector.Hand.Left, ArduinoConnector.PunchType.Hook);
+        Punch(ArduinoConnector.Hand.Left, ArduinoConnector.PunchType.Hook, "HookL");
+        Debug.Log("left hook");
     }
 
     void OnLeftUppercut(InputAction.CallbackContext context)
     {
-        Punch(ArduinoConnector.Hand.Left, ArduinoConnector.PunchType.Uppercut);
+        Punch(ArduinoConnector.Hand.Left, ArduinoConnector.PunchType.Uppercut, "UppercutL");
+        Debug.Log("left uppercut");
     }
 
     void OnRightJab(InputAction.CallbackContext context)
     {
-        Punch(ArduinoConnector.Hand.Right, ArduinoConnector.PunchType.Jab);
+        Punch(ArduinoConnector.Hand.Right, ArduinoConnector.PunchType.Jab, "JabR");
+        Debug.Log("right jab");
     }
 
     void OnRightCross(InputAction.CallbackContext context)
     {
-        Punch(ArduinoConnector.Hand.Right, ArduinoConnector.PunchType.Cross);
+        Punch(ArduinoConnector.Hand.Right, ArduinoConnector.PunchType.Cross, "CrossR");
+        Debug.Log("right cross");
     }
 
     void OnRightHook(InputAction.CallbackContext context)
     {
-        Punch(ArduinoConnector.Hand.Right, ArduinoConnector.PunchType.Hook);
+        Punch(ArduinoConnector.Hand.Right, ArduinoConnector.PunchType.Hook, "HookR");
+        Debug.Log("right hook");
     }
 
     void OnRightUppercut(InputAction.CallbackContext context)
     {
-        Punch(ArduinoConnector.Hand.Right, ArduinoConnector.PunchType.Uppercut);
+        Punch(ArduinoConnector.Hand.Right, ArduinoConnector.PunchType.Uppercut, "UppercutR");
+        Debug.Log("right uppercut");
     }
 
     void OnBlock(InputAction.CallbackContext context)

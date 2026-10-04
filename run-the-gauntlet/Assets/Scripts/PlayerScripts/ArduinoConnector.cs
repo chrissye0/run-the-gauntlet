@@ -17,7 +17,7 @@ public class ArduinoConnector : MonoBehaviour
         Left, Right
     }
 
-    public event Action<Hand, PunchType> PunchDetected;
+    public event Action<Hand, PunchType, string> PunchDetected;
     public event Action BlockDetected;
     public event Action UnblockDetected;
 
@@ -267,10 +267,10 @@ public class ArduinoConnector : MonoBehaviour
             leftState = PunchState.Waiting;
             return;
         }
-        if (uppercutScore == highestScore) ExecutePunch(Hand.Left, PunchType.Uppercut);
-        else if (hookScore == highestScore) ExecutePunch(Hand.Left, PunchType.Hook);
-        else if (crossScore == highestScore) ExecutePunch(Hand.Left, PunchType.Cross);
-        else if (jabScore == highestScore) ExecutePunch(Hand.Left, PunchType.Jab);
+        if (uppercutScore == highestScore) ExecutePunch(Hand.Left, PunchType.Uppercut, "UppercutL");
+        else if (hookScore == highestScore) ExecutePunch(Hand.Left, PunchType.Hook, "HookL");
+        else if (crossScore == highestScore) ExecutePunch(Hand.Left, PunchType.Cross, "CrossL");
+        else if (jabScore == highestScore) ExecutePunch(Hand.Left, PunchType.Jab, "JabL");
     }
 
     // RIGHT HAND
@@ -355,14 +355,14 @@ public class ArduinoConnector : MonoBehaviour
             rightState = PunchState.Waiting;
             return;
         }
-        if (uppercutScore == highestScore) ExecutePunch(Hand.Right, PunchType.Uppercut);
-        else if (hookScore == highestScore) ExecutePunch(Hand.Right, PunchType.Hook);
-        else if (crossScore == highestScore) ExecutePunch(Hand.Right, PunchType.Cross);
-        else if (jabScore == highestScore) ExecutePunch(Hand.Right, PunchType.Jab);
+        if (uppercutScore == highestScore) ExecutePunch(Hand.Right, PunchType.Uppercut, "UppercutR");
+        else if (hookScore == highestScore) ExecutePunch(Hand.Right, PunchType.Hook, "HookR");
+        else if (crossScore == highestScore) ExecutePunch(Hand.Right, PunchType.Cross, "CrossR");
+        else if (jabScore == highestScore) ExecutePunch(Hand.Right, PunchType.Jab, "JabR");
     }
 
     // execute punch and go into cooldown
-    private void ExecutePunch(Hand hand, PunchType punch)
+    private void ExecutePunch(Hand hand, PunchType punch, string animation)
     {
         Debug.Log(hand + " " + punch + " executed");
         if (hand == Hand.Left)
@@ -375,7 +375,7 @@ public class ArduinoConnector : MonoBehaviour
             rightState = PunchState.Cooldown;
             rightCooldownTimer = cooldownDuration;
         }
-        PunchDetected?.Invoke(hand, punch);
+        PunchDetected?.Invoke(hand, punch, animation);
     }
 
     private void UpdateBlockingState()
