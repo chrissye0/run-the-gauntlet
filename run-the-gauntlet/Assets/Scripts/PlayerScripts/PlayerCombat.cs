@@ -42,7 +42,6 @@ public class PlayerCombat : MonoBehaviour
         arduinoConnector.BlockDetected += Block;
         arduinoConnector.UnblockDetected += Unblock;
 
-
         leftJabAction = playerInput.actions.FindAction("Left Jab");
         leftCrossAction = playerInput.actions.FindAction("Left Cross");
         leftHookAction = playerInput.actions.FindAction("Left Hook");
@@ -74,16 +73,22 @@ public class PlayerCombat : MonoBehaviour
     {
         // set target to the active enemy
         GameObject activeEnemy = targeting.ActiveEnemy;
+        Enemy enemyInfo = activeEnemy.GetComponent<Enemy>();
         // return out if nothing found
         if (activeEnemy == null) return;
         // trigger animation
         animator.SetTrigger(animation);
-        // increase special meter by a little
-        gameManager.SetSpecialMeterValue(5f);
-        // destroy target enemy
-        Destroy(activeEnemy);
-        // add to score
-        gameManager.score += 100;
+
+        // if punch matches
+        if (enemyInfo.CheckPunch(punchType))
+        {
+            // increase special meter by a little
+            gameManager.SetSpecialMeterValue(5f);
+            // destroy target enemy
+            Destroy(activeEnemy);
+            // add to score
+            gameManager.score += 100;
+        }
     }
 
     // for invoking from ArduinoConnector

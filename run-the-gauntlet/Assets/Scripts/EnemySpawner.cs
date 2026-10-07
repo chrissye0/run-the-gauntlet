@@ -6,7 +6,7 @@ public class EnemySpawner : MonoBehaviour
     // reference to enemy prefab
     public GameObject enemyPrefab;
     // use this to reference player's location
-    public Transform player;
+    public GameObject player;
     // use this to reference game manager
     public GameManager gameManager;
     // max enemy account (adjust as needed)
@@ -14,6 +14,10 @@ public class EnemySpawner : MonoBehaviour
     // make a list of enemies to know how many exist at a time
      List<GameObject> enemyList = new List<GameObject>();
 
+    void Start()
+    {
+        player = GameObject.FindWithTag("Player");
+    }
     // Update is called once per frame
     void Update()
     {
@@ -29,7 +33,7 @@ public class EnemySpawner : MonoBehaviour
             enemyList.Add(enemy);
             // add the player's location for the enemy's nav mesh
             EnemyMovement movement = enemy.GetComponent<EnemyMovement>();
-            movement.player = player;
+            movement.player = player.transform;
             // add game manager to enemy combat script
             EnemyCombat combat = enemy.GetComponent<EnemyCombat>();
             combat.gameManager = gameManager;
