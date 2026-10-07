@@ -90,11 +90,14 @@ public class ArduinoConnector : MonoBehaviour
     public float blockAccelX = 3f;
     // threshold to stop blocking (if blocking)
     public float unblockAccelX = -2f;
+    // minimum time a block can last
+    public float minimumBlockDuration = 1f;
     // latest accelX received from each sensor
     private float latestLeftAccelX = 0f;
     private float latestRightAccelX = 0f;
     public float blockCooldownDuration = 2f;
     private float blockCooldownTimer = 0f;
+    private float blockStartTime = 0f;
     private PlayerCombat playerCombat;
 
     private void Start()
@@ -190,7 +193,7 @@ public class ArduinoConnector : MonoBehaviour
     private void ProcessLeftHand(float accelX, float accelY, float accelZ, float gyroX)
     {
         // return out if in cooldown
-        if (leftState == PunchState.Cooldown) return;
+        if (leftState == PunchState.Cooldown || blockCooldownTimer - 1f > 0f) return;
 
         // update the latest blocking sensor value and update blocking state
         latestLeftAccelX = accelX;
@@ -278,7 +281,7 @@ public class ArduinoConnector : MonoBehaviour
     private void ProcessRightHand(float accelX, float accelY, float accelZ, float gyroX)
     {
         // return out if in cooldown
-        if (rightState == PunchState.Cooldown) return;
+        if (rightState == PunchState.Cooldown || blockCooldownTimer > 0f) return;
 
         // update the latest blocking sensor value and update blocking state
         latestRightAccelX = accelX;
@@ -387,6 +390,8 @@ public class ArduinoConnector : MonoBehaviour
         {
             Debug.Log("Blocking");
             playerCombat.blocking = true;
+            // record when the block starts
+            blockStartTime = Time.time;
             // reset punch states
             leftState = PunchState.Waiting;
             rightState = PunchState.Waiting;
@@ -395,6 +400,8 @@ public class ArduinoConnector : MonoBehaviour
         // if unblocking
         else if (playerCombat.blocking && latestLeftAccelX < unblockAccelX && latestRightAccelX < unblockAccelX)
         {
+            // return out if not enough time passed
+            if (Time.time - blockStartTime < minimumBlockDuration) return;
             Debug.Log("Unblocking");
             playerCombat.blocking = false;
             // start cooldown

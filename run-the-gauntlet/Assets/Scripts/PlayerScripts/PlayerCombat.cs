@@ -90,11 +90,13 @@ public class PlayerCombat : MonoBehaviour
     void Block()
     {
         blocking = true;
+        animator.SetBool("isBlocking", true);
     }
 
     void Unblock()
     {
         blocking = false;
+        animator.SetBool("isBlocking", false);
         if (gameManager.specialMeterValue == 100) Special();
     }
 
