@@ -13,6 +13,14 @@ public class GameManager : MonoBehaviour
     public RectTransform specialMeter;
     public GameObject gameOverPanel;
 
+    // for replays
+    private void Start()
+    {
+        Time.timeScale = 1f;
+        score = 0;
+        gameOverPanel.SetActive(false);
+    }
+
     void Update()
     {
         // update score
