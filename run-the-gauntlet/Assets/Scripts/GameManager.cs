@@ -1,6 +1,7 @@
 using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
@@ -45,7 +46,14 @@ public class GameManager : MonoBehaviour
         specialMeterValue = Mathf.Clamp(specialMeterValue, 0f, 100f);
         specialMeter.sizeDelta = new Vector2((specialMeterValue / 100f) * width, height);
         // do something here to indicate special
-        if (specialMeterValue == 100) Debug.Log("special ready!");
+        if (specialMeterValue == 100)
+        {
+            specialMeter.GetComponent<Image>().color = Color.yellow;
+            Debug.Log("special ready!");
+        } else
+        {
+            specialMeter.GetComponent<Image>().color = Color.white;
+        }
     }
 
     // format to minutes:seconds

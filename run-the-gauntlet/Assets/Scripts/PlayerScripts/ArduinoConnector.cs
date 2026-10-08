@@ -4,8 +4,13 @@ using UnityEngine;
 
 public class ArduinoConnector : MonoBehaviour
 {
-    private SerialPort leftSerial = new SerialPort("COM5", 115200);
-    private SerialPort rightSerial = new SerialPort("COM6", 115200);
+    // WINDOW PORTS
+    // private SerialPort leftSerial = new SerialPort("COM5", 115200);
+    // private SerialPort rightSerial = new SerialPort("COM6", 115200);
+
+    // MAC PORTS
+    private SerialPort leftSerial = new SerialPort("/dev/tty.usbmodem14301", 115200);
+    private SerialPort rightSerial = new SerialPort("/dev/cu.usbmodem14201", 115200);
 
     public enum PunchType
     {
