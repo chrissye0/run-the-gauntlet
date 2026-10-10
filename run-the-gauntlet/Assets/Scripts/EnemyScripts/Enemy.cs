@@ -15,7 +15,8 @@ public class Enemy : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        punchText = GetComponentInChildren<TMP_Text>(true);
+        GameObject uiObject = GameObject.Find("PunchText");
+        punchText = uiObject.GetComponent<TMP_Text>();
         player = GameObject.FindWithTag("Player");
         playerTargeting = player.GetComponent<PlayerTargeting>();
         combosList.Add(new List<ArduinoConnector.PunchType> { ArduinoConnector.PunchType.Jab });
@@ -47,7 +48,7 @@ public class Enemy : MonoBehaviour
         Debug.Log(randomCombo[0]);
         // change this later when combos with multiple punches are integrated
         // if punch matches current needed punch OR player maxes out on tries
-        if (randomCombo[0] == punchType || tries == 2)
+        if (randomCombo[0] == punchType || tries == 1)
         {
             tries = 0;
             return true;
