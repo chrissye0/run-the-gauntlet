@@ -73,9 +73,9 @@ public class PlayerCombat : MonoBehaviour
     {
         // set target to the active enemy
         GameObject activeEnemy = targeting.ActiveEnemy;
-        Enemy enemyInfo = activeEnemy.GetComponent<Enemy>();
         // return out if nothing found
         if (activeEnemy == null) return;
+        Enemy enemyInfo = activeEnemy.GetComponent<Enemy>();
         // trigger animation
         animator.SetTrigger(animation);
 

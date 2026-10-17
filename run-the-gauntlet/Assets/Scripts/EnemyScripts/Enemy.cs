@@ -4,7 +4,8 @@ using UnityEngine;
 
 public class Enemy : MonoBehaviour
 {
-    private TMP_Text punchText;
+    [SerializeField] private TMP_Text punchText;
+    [SerializeField] private GameObject image;
     private List<List<ArduinoConnector.PunchType>> combosList = new List<List<ArduinoConnector.PunchType>>();
     private List<ArduinoConnector.PunchType> randomCombo = new List<ArduinoConnector.PunchType>();
     private GameObject player;
@@ -15,10 +16,13 @@ public class Enemy : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        GameObject uiObject = GameObject.Find("PunchText");
-        punchText = uiObject.GetComponent<TMP_Text>();
+        // set punch text
+        //GameObject uiObject = GameObject.Find("PunchText");
+        //punchText = uiObject.GetComponent<TMP_Text>();
         player = GameObject.FindWithTag("Player");
+
         playerTargeting = player.GetComponent<PlayerTargeting>();
+
         combosList.Add(new List<ArduinoConnector.PunchType> { ArduinoConnector.PunchType.Jab });
         combosList.Add(new List<ArduinoConnector.PunchType> { ArduinoConnector.PunchType.Cross });
         combosList.Add(new List<ArduinoConnector.PunchType> { ArduinoConnector.PunchType.Hook });
@@ -29,8 +33,10 @@ public class Enemy : MonoBehaviour
 
     private void Update()
     {
+        if (!this.gameObject || !image || !punchText) return; 
         if (this.gameObject == playerTargeting.ActiveEnemy)
         {
+            image.SetActive(true);
             punchText.gameObject.SetActive(true);
             if (randomCombo[0] == ArduinoConnector.PunchType.Jab) punchText.text = "JAB";
             if (randomCombo[0] == ArduinoConnector.PunchType.Cross) punchText.text = "CROSS";
@@ -38,6 +44,7 @@ public class Enemy : MonoBehaviour
             if (randomCombo[0] == ArduinoConnector.PunchType.Uppercut) punchText.text = "UPPERCUT";
         } else
         {
+            image.SetActive(false);
             punchText.gameObject.SetActive(false);
         }
     }

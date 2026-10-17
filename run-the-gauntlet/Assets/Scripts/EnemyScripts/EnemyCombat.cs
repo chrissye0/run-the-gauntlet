@@ -5,13 +5,13 @@ public class EnemyCombat : MonoBehaviour
     public GameManager gameManager;
     private GameObject player;
     private PlayerCombat playerCombat;
-    public float enemyAttackRange = 3.5f;
+    [SerializeField] private TMP_Text attackText;
+    [SerializeField] private float enemyAttackRange = 3.5f;
     // time in between attacks
-    public float attackCooldown = 6.0f;
-    private float lastAttackTime = 0f;
+    [SerializeField] private float attackCooldown = 6.0f;
+    [SerializeField] private float lastAttackTime = 0f;
     // how many points are deducted
-    public float damage = 5f;
-    private TMP_Text attackText;
+    [SerializeField] private float damage = 5f;
     private float attackTextEndTime = 0f;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -19,10 +19,6 @@ public class EnemyCombat : MonoBehaviour
     {
         player = GameObject.FindGameObjectWithTag("Player");
         playerCombat = player.GetComponent<PlayerCombat>();
-
-        GameObject uiObject = GameObject.Find("AttackText");
-        attackText = uiObject.GetComponent<TMP_Text>();
-        attackText.gameObject.SetActive(false);
     }
 
     // Update is called once per frame
