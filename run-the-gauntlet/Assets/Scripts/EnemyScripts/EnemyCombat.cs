@@ -5,14 +5,13 @@ public class EnemyCombat : MonoBehaviour
     public GameManager gameManager;
     private GameObject player;
     private PlayerCombat playerCombat;
-    [SerializeField] private TMP_Text attackText;
     [SerializeField] private float enemyAttackRange = 3.5f;
     // time in between attacks
     [SerializeField] private float attackCooldown = 6.0f;
     [SerializeField] private float lastAttackTime = 0f;
     // how many points are deducted
     [SerializeField] private float damage = 5f;
-    private float attackTextEndTime = 0f;
+    [SerializeField] private Animator animator;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -26,19 +25,11 @@ public class EnemyCombat : MonoBehaviour
     {
         float distance = Vector3.Distance(transform.position, player.transform.position);
         // attack if within range and cooldown has passed
-        if (attackText == null) return;
         if (distance <= enemyAttackRange && Time.time >= lastAttackTime + attackCooldown)
         {
             Attack();
             // reset timer
             lastAttackTime = Time.time;
-            attackText.text = "ATTACKING!";
-            attackText.gameObject.SetActive(true);
-            attackTextEndTime = Time.time + 0.5f;
-        }
-        if (attackText.gameObject.activeSelf && Time.time >= attackTextEndTime)
-        {
-            attackText.gameObject.SetActive(false);
         }
     }
 
@@ -49,6 +40,7 @@ public class EnemyCombat : MonoBehaviour
         {
             GetComponent<Renderer>().material.color = Color.yellow;
         }
+        animator.SetTrigger("punch");
         // check to see if player is blocking
         if (playerCombat.blocking)
         {

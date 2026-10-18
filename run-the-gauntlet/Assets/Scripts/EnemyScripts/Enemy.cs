@@ -16,9 +16,6 @@ public class Enemy : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        // set punch text
-        //GameObject uiObject = GameObject.Find("PunchText");
-        //punchText = uiObject.GetComponent<TMP_Text>();
         player = GameObject.FindWithTag("Player");
 
         playerTargeting = player.GetComponent<PlayerTargeting>();

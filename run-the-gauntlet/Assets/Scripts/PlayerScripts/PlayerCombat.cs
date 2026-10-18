@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
+
 
 public class PlayerCombat : MonoBehaviour
 {
@@ -18,9 +20,9 @@ public class PlayerCombat : MonoBehaviour
     private PlayerTargeting targeting;
     // to see if actively blocking
     public bool blocking;
-    public float specialRange = 5f;
+    [SerializeField] float specialRange = 5f;
 
-    public Animator animator;
+    [SerializeField] Animator gauntletAnimator;
 
     // for hardware connection
     private ArduinoConnector arduinoConnector;
@@ -76,16 +78,17 @@ public class PlayerCombat : MonoBehaviour
         // return out if nothing found
         if (activeEnemy == null) return;
         Enemy enemyInfo = activeEnemy.GetComponent<Enemy>();
+        Animator enemyAnimator = activeEnemy.transform.Find("Y Bot").GetComponent<Animator>();
         // trigger animation
-        animator.SetTrigger(animation);
+        gauntletAnimator.SetTrigger(animation);
 
         // if punch matches
         if (enemyInfo.CheckPunch(punchType))
         {
             // increase special meter by a little
             gameManager.SetSpecialMeterValue(5f);
-            // destroy target enemy
-            Destroy(activeEnemy);
+            // destroy target enemy (after death animation plays)
+            StartCoroutine(DestroyAfterDeath(activeEnemy));
             // add to score
             gameManager.score += 100;
         }
@@ -95,13 +98,13 @@ public class PlayerCombat : MonoBehaviour
     void Block()
     {
         blocking = true;
-        animator.SetBool("isBlocking", true);
+        gauntletAnimator.SetBool("isBlocking", true);
     }
 
     void Unblock()
     {
         blocking = false;
-        animator.SetBool("isBlocking", false);
+        gauntletAnimator.SetBool("isBlocking", false);
         if (gameManager.specialMeterValue == 100) Special();
     }
 
@@ -121,15 +124,37 @@ public class PlayerCombat : MonoBehaviour
         }
         foreach (GameObject enemy in inRangeEnemies)
         {
-            Destroy(enemy);
+            StartCoroutine(DestroyAfterDeath(enemy));
             gameManager.score += 100;
         }
         gameManager.SetSpecialMeterValue(-100f);
         Debug.Log("SPECIAL ATTACK!");
     }
 
-    // in later iterations, also check for enemy armor and weaknesses in the below methods
-    // for instance, for uppercuts, check to see if the enemy does not have armor on its underside
+    private IEnumerator DestroyAfterDeath(GameObject enemy)
+    {
+        // get animator from model
+        Animator enemyAnimator = enemy.transform.Find("Y Bot").GetComponent<Animator>();
+        if (enemyAnimator == null)
+        {
+            Destroy(enemy);
+            yield break;
+        }
+        // trigger death animation
+        enemyAnimator.SetTrigger("die");
+        // wait until death animation begins
+        while (!enemyAnimator.GetCurrentAnimatorStateInfo(0).IsName("Dying Backwards"))
+        {
+            yield return null;
+        }
+        // wait until it finishes
+        while (enemyAnimator.GetCurrentAnimatorStateInfo(0).IsName("Dying Backwards") && enemyAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime < 1f)
+        {
+            yield return null;
+        }
+        // destroy enemy game object
+        Destroy(enemy);
+    }
 
     void OnLeftJab(InputAction.CallbackContext context)
     {

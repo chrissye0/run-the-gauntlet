@@ -2468,11 +2468,11 @@ NavMeshObstacle:
   m_Enabled: 1
   serializedVersion: 3
   m_Shape: 1
-  m_Extents: {x: 2, y: 0.5, z: 2}
+  m_Extents: {x: 0.25, y: 0.5, z: 0.5}
   m_MoveThreshold: 0.1
   m_Carve: 0
   m_CarveOnlyStationary: 1
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Center: {x: 0, y: 0, z: -0.59}
   m_TimeToStationary: 0.5
 --- !u!114 &2140801588
 MonoBehaviour:
@@ -2519,7 +2519,7 @@ MonoBehaviour:
   gameManager: {fileID: 147669044}
   blocking: 0
   specialRange: 10
-  animator: {fileID: 1991841150}
+  gauntletAnimator: {fileID: 1991841150}
 --- !u!114 &2140801591
 MonoBehaviour:
   m_ObjectHideFlags: 0
