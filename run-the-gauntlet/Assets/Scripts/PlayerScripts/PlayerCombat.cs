@@ -87,10 +87,20 @@ public class PlayerCombat : MonoBehaviour
         {
             // increase special meter by a little
             gameManager.SetSpecialMeterValue(5f);
-            // destroy target enemy (after death animation plays)
-            StartCoroutine(DestroyAfterDeath(activeEnemy));
             // add to score
-            gameManager.score += 100;
+            gameManager.score += 50;
+            // if defeated
+            if (enemyInfo.enemyHealth == 0)
+            {
+                // reset punch count (used for punch indexing)
+                enemyInfo.punchCount = 0;
+                // increase special meter more
+                gameManager.SetSpecialMeterValue(15f);
+                // add more to score
+                gameManager.score += 100;
+                // destroy target enemy (after death animation plays)
+                StartCoroutine(DestroyAfterDeath(activeEnemy));
+            }
         }
     }
 

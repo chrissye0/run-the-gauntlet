@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Data.Common;
 using TMPro;
 using UnityEngine;
 
@@ -13,6 +14,7 @@ public class Enemy : MonoBehaviour
 
     private int tries = 0;
     public int enemyHealth = 0;
+    public int punchCount = 0;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -40,45 +42,25 @@ public class Enemy : MonoBehaviour
 
         // 4 hits
         combosList.Add(new List<ArduinoConnector.PunchType> { ArduinoConnector.PunchType.Jab, ArduinoConnector.PunchType.Cross, ArduinoConnector.PunchType.Hook, ArduinoConnector.PunchType.Uppercut }); // JAB, CROSS, HOOK, UPPERCUT
-        
+
         // get random punch combination
         randomCombo = combosList[Random.Range(0, combosList.Count)];
         // have health equal the number of required punches
         enemyHealth = randomCombo.Count;
-
-        for(int i = 0; i < randomCombo.Count; i++)
-        {
-            if (randomCombo[i] == ArduinoConnector.PunchType.Jab) punchText.text += "JAB";
-            if (randomCombo[i] == ArduinoConnector.PunchType.Cross) punchText.text += "CROSS";
-            if (randomCombo[i] == ArduinoConnector.PunchType.Hook) punchText.text += "HOOK";
-            if (randomCombo[i] == ArduinoConnector.PunchType.Uppercut) punchText.text += "UPPERCUT";
-            // if only one element OR this is the last element, return out
-            if (randomCombo.Count == 1 || i == randomCombo.Count) return;
-            // add a space
-            punchText.text += "\n";
-        }
-        //foreach (ArduinoConnector.PunchType punch in randomCombo)
-        //{
-        //    if (punch == ArduinoConnector.PunchType.Jab) punchText.text += "JAB";
-        //    if (punch == ArduinoConnector.PunchType.Cross) punchText.text += "CROSS";
-        //    if (punch == ArduinoConnector.PunchType.Hook) punchText.text += "HOOK";
-        //    if (punch == ArduinoConnector.PunchType.Uppercut) punchText.text += "UPPERCUT";
-        //}
+        // update punch text UI
+        UpdatePunchText();
     }
 
     private void Update()
     {
-        if (!this.gameObject || !image || !punchText) return; 
+        if (!this.gameObject || !image || !punchText) return;
+        // make UI active on active enemy
         if (this.gameObject == playerTargeting.ActiveEnemy)
         {
             image.SetActive(true);
             punchText.gameObject.SetActive(true);
-            Debug.Log(randomCombo.ToString());
-            //if (randomCombo[0] == ArduinoConnector.PunchType.Jab) punchText.text = "JAB";
-            //if (randomCombo[0] == ArduinoConnector.PunchType.Cross) punchText.text = "CROSS";
-            //if (randomCombo[0] == ArduinoConnector.PunchType.Hook) punchText.text = "HOOK";
-            //if (randomCombo[0] == ArduinoConnector.PunchType.Uppercut) punchText.text = "UPPERCUT";
-        } else
+        }
+        else
         {
             image.SetActive(false);
             punchText.gameObject.SetActive(false);
@@ -87,18 +69,46 @@ public class Enemy : MonoBehaviour
 
     public bool CheckPunch(ArduinoConnector.PunchType punchType)
     {
-        Debug.Log(randomCombo[0]);
-        // change this later when combos with multiple punches are integrated
-        // if punch matches current needed punch OR player maxes out on tries
-        if (randomCombo[0] == punchType || tries == 1)
+        // if punch matches current needed punch OR player maxes out on tries (max 2)
+        if (randomCombo[punchCount] == punchType || tries == 1)
         {
             tries = 0;
+            // add to index
+            punchCount += 1;
+            // deal damage to enemy
+            enemyHealth -= 1;
+            // update punch text UI to show completed punches in red
+            UpdatePunchText();
             return true;
         }
         else
         {
             tries += 1;
             return false;
+        }
+    }
+
+    private void UpdatePunchText()
+    {
+        punchText.text = "";
+        for (int i = 0; i < randomCombo.Count; i++)
+        {
+            string punchName = randomCombo[i].ToString().ToUpper();
+            // highlight completed punches in red
+            if (i < punchCount)
+            {
+                punchText.text += $"<color=red>{punchName}</color>";
+            }
+            else
+            {
+                // remaining punches remain white
+                punchText.text += punchName;
+            }
+            // add a new line in between punches
+            if (i < randomCombo.Count - 1)
+            {
+                punchText.text += "\n";
+            }
         }
     }
 }
