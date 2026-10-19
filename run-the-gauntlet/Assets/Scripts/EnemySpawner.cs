@@ -4,13 +4,13 @@ using UnityEngine;
 public class EnemySpawner : MonoBehaviour
 {
     // reference to enemy prefab
-    public GameObject enemyPrefab;
+    [SerializeField] private GameObject enemyPrefab;
     // use this to reference player's location
-    public GameObject player;
+    [SerializeField] private GameObject player;
     // use this to reference game manager
-    public GameManager gameManager;
+    [SerializeField] private GameManager gameManager;
     // max enemy account (adjust as needed)
-    public int maxEnemyCount = 3;
+    [SerializeField] private int maxEnemyCount = 3;
     // make a list of enemies to know how many exist at a time
      List<GameObject> enemyList = new List<GameObject>();
 

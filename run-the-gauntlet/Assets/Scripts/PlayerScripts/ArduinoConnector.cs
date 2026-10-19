@@ -41,37 +41,37 @@ public class ArduinoConnector : MonoBehaviour
     // LEFT HAND THRESHOLDS
     [Header("Left Hand Thresholds")]
     // Jab
-    public float leftJabAccelX = -5f;
+    [SerializeField] private float leftJabAccelX = -5f;
     // Cross
-    public float leftCrossAccelX = -4f;
-    public float leftCrossGyroX = 800f;
+    [SerializeField] private float leftCrossAccelX = -4f;
+    [SerializeField] private float leftCrossGyroX = 800f;
     // Hook
-    public float leftHookAccelY = 2f;
-    public float leftHookAccelZ = -2f;
+    [SerializeField] private float leftHookAccelY = 2f;
+    [SerializeField] private float leftHookAccelZ = -2f;
     // Uppercut
-    public float leftUppercutAccelY = 2f;
-    public float leftUppercutAccelZ = -8f;
+    [SerializeField] private float leftUppercutAccelY = 2f;
+    [SerializeField] private float leftUppercutAccelZ = -8f;
 
     // RIGHT HAND THRESHOLDS
     [Header("Right Hand Thresholds")]
     // Jab
     public float rightJabAccelX = -5f;
     // Cross
-    public float rightCrossAccelX = -4f;
-    public float rightCrossGyroX = 800f;
+    [SerializeField] private float rightCrossAccelX = -4f;
+    [SerializeField] private float rightCrossGyroX = 800f;
     // Hook
-    public float rightHookAccelY = 2f;
-    public float rightHookAccelZ = -5f;
+    [SerializeField] private float rightHookAccelY = 2f;
+    [SerializeField] private float rightHookAccelZ = -5f;
     // Uppercut
-    public float rightUppercutAccelY = 2f;
-    public float rightUppercutAccelZ = -8f;
+    [SerializeField] private float rightUppercutAccelY = 2f;
+    [SerializeField] private float rightUppercutAccelZ = -8f;
 
     // TIMING
     [Header("Timing")]
     // time for collecting sensor data
     public float maxPunchDuration = 0.20f;
     // punch cooldown
-    public float cooldownDuration = 0.70f;
+    [SerializeField] private float cooldownDuration = 0.70f;
     private float leftCooldownTimer = 0f;
     private float rightCooldownTimer = 0f;
 
@@ -94,13 +94,13 @@ public class ArduinoConnector : MonoBehaviour
     // threshold to start blocking
     public float blockAccelX = 3f;
     // threshold to stop blocking (if blocking)
-    public float unblockAccelX = -2f;
+    [SerializeField] private float unblockAccelX = -2f;
     // minimum time a block can last
-    public float minimumBlockDuration = 1f;
+    [SerializeField] private float minimumBlockDuration = 1f;
     // latest accelX received from each sensor
     private float latestLeftAccelX = 0f;
     private float latestRightAccelX = 0f;
-    public float blockCooldownDuration = 2f;
+    [SerializeField] private float blockCooldownDuration = 2f;
     private float blockCooldownTimer = 0f;
     private float blockStartTime = 0f;
     private PlayerCombat playerCombat;

@@ -20,9 +20,9 @@ public class PlayerCombat : MonoBehaviour
     private PlayerTargeting targeting;
     // to see if actively blocking
     public bool blocking;
-    [SerializeField] float specialRange = 5f;
+    [SerializeField] private float specialRange = 5f;
 
-    [SerializeField] Animator gauntletAnimator;
+    [SerializeField] private Animator gauntletAnimator;
 
     // for hardware connection
     private ArduinoConnector arduinoConnector;

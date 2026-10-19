@@ -6,13 +6,14 @@ using UnityEngine.UI;
 public class GameManager : MonoBehaviour
 {
     public float score = 0f;
-    public float specialMeterValue, width, height;
-    public float timeRemaining = 60f;
+    public float specialMeterValue;
+    private float width, height;
+    [SerializeField] private float timeRemaining = 60f;
 
-    public TMP_Text scoreText;
-    public TMP_Text timerText;
-    public RectTransform specialMeter;
-    public GameObject gameOverPanel;
+    [SerializeField] private TMP_Text scoreText;
+    [SerializeField] private TMP_Text timerText;
+    [SerializeField] private RectTransform specialMeter;
+    [SerializeField] private GameObject gameOverPanel;
 
     // for replays
     private void Start()

@@ -3,9 +3,9 @@ using UnityEngine;
 public class PlayerTargeting : MonoBehaviour
 {
     // distance to be targeted
-    public float targetRange = 20f;
+    [SerializeField] private float targetRange = 20f;
     // distance to attack
-    public float attackRange = 4f;
+    [SerializeField] private float attackRange = 4f;
     // next enemy to target
     private GameObject targetEnemy;
     public GameObject TargetEnemy
@@ -31,7 +31,8 @@ public class PlayerTargeting : MonoBehaviour
         if (targetEnemy == null)
         {
             FindNewTarget();
-        } else
+        }
+        else
         {
             // otherwise, see if the enemy is within attack range
             CheckAttackRange(targetEnemy);
@@ -65,19 +66,7 @@ public class PlayerTargeting : MonoBehaviour
     void CheckAttackRange(GameObject enemy)
     {
         float distance = Vector3.Distance(transform.position, enemy.transform.position);
-        // if enemy is close enough to be attacked
-        if (distance <= attackRange)
-        {
-            // mark as red
-            enemy.GetComponent<Renderer>().material.color = Color.red;
-            // set it to the active enemy
-            activeEnemy = enemy;
-        }
-        else
-        {
-            // enemy is not close enough
-            // mark as white
-            enemy.GetComponent<Renderer>().material.color = Color.white;
-        }
+        // if enemy is close enough to be attacked, set it to the active enemy
+        if (distance <= attackRange) activeEnemy = enemy;
     }
 }

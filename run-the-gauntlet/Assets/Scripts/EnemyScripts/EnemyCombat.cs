@@ -35,11 +35,6 @@ public class EnemyCombat : MonoBehaviour
 
     void Attack()
     {
-        //Debug.Log("Attacking player!");
-        if (GetComponent<Renderer>().material.color == Color.white)
-        {
-            GetComponent<Renderer>().material.color = Color.yellow;
-        }
         animator.SetTrigger("punch");
         // check to see if player is blocking
         if (playerCombat.blocking)
