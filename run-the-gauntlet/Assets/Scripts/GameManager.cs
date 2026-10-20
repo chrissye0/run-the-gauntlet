@@ -7,7 +7,7 @@ public class GameManager : MonoBehaviour
 {
     public float score = 0f;
     public float specialMeterValue;
-    private float width, height;
+    public float width, height;
     [SerializeField] private float timeRemaining = 60f;
 
     [SerializeField] private TMP_Text scoreText;

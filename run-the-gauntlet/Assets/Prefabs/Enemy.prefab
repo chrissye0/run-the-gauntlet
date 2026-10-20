@@ -168,7 +168,7 @@ Transform:
   m_GameObject: {fileID: 2639702559140887953}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.9802569, z: 0}
+  m_LocalPosition: {x: 0, y: -1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -275,7 +275,7 @@ NavMeshAgent:
   m_AutoBraking: 1
   m_AutoRepath: 1
   m_Height: 2
-  m_BaseOffset: 0.9802569
+  m_BaseOffset: 1
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
 --- !u!114 &5294500053305662199
@@ -293,6 +293,7 @@ MonoBehaviour:
   punchText: {fileID: 6842933203375199775}
   image: {fileID: 6768802839961753352}
   enemyHealth: 0
+  punchCount: 0
 --- !u!114 &5407757014415628741
 MonoBehaviour:
   m_ObjectHideFlags: 0
