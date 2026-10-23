@@ -1,4 +1,4 @@
 run-the-gauntlet/Assets/TextMesh?Pro/** linguist-generated
-run-the-gauntlet/Packages/* linguist-vendored
-run-the-gauntlet/Assets/Plugins/* linguist-vendored
-run-the-gauntlet//Assets/AssetStorePackages/* linguist-vendored
+run-the-gauntlet/Packages/** linguist-vendored
+run-the-gauntlet/Assets/Plugins/** linguist-vendored
+run-the-gauntlet//Assets/AssetStorePackages/** linguist-vendored
