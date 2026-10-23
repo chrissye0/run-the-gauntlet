@@ -5,12 +5,12 @@ using UnityEngine;
 public class ArduinoConnector : MonoBehaviour
 {
     // WINDOW PORTS
-    // private SerialPort leftSerial = new SerialPort("COM5", 115200);
-    // private SerialPort rightSerial = new SerialPort("COM6", 115200);
+    private SerialPort leftSerial = new SerialPort("COM5", 115200);
+    private SerialPort rightSerial = new SerialPort("COM6", 115200);
 
     // MAC PORTS
-    private SerialPort leftSerial = new SerialPort("/dev/tty.usbmodem14301", 115200);
-    private SerialPort rightSerial = new SerialPort("/dev/cu.usbmodem14201", 115200);
+    //private SerialPort leftSerial = new SerialPort("/dev/tty.usbmodem14301", 115200);
+    //private SerialPort rightSerial = new SerialPort("/dev/cu.usbmodem14201", 115200);
 
     public enum PunchType
     {
@@ -275,10 +275,26 @@ public class ArduinoConnector : MonoBehaviour
             leftState = PunchState.Waiting;
             return;
         }
-        if (uppercutScore == highestScore) ExecutePunch(Hand.Left, PunchType.Uppercut, "UppercutL");
-        else if (hookScore == highestScore) ExecutePunch(Hand.Left, PunchType.Hook, "HookL");
-        else if (crossScore == highestScore) ExecutePunch(Hand.Left, PunchType.Cross, "CrossL");
-        else if (jabScore == highestScore) ExecutePunch(Hand.Left, PunchType.Jab, "JabL");
+        if (uppercutScore == highestScore)
+        {
+            ExecutePunch(Hand.Left, PunchType.Uppercut, "UppercutL");
+            Debug.Log("UPPERCUT SCORE: " + highestScore);
+        }
+        else if (hookScore == highestScore)
+        {
+            ExecutePunch(Hand.Left, PunchType.Hook, "HookL");
+            Debug.Log("HOOK SCORE: " + highestScore);
+        }
+        else if (crossScore == highestScore)
+        {
+            ExecutePunch(Hand.Left, PunchType.Cross, "CrossL");
+            Debug.Log("CROSS SCORE: " + highestScore);
+        }
+        else if (jabScore == highestScore)
+        {
+            ExecutePunch(Hand.Left, PunchType.Jab, "JabL");
+            Debug.Log("JAB SCORE: " + highestScore);
+        }
     }
 
     // RIGHT HAND
@@ -363,10 +379,26 @@ public class ArduinoConnector : MonoBehaviour
             rightState = PunchState.Waiting;
             return;
         }
-        if (uppercutScore == highestScore) ExecutePunch(Hand.Right, PunchType.Uppercut, "UppercutR");
-        else if (hookScore == highestScore) ExecutePunch(Hand.Right, PunchType.Hook, "HookR");
-        else if (crossScore == highestScore) ExecutePunch(Hand.Right, PunchType.Cross, "CrossR");
-        else if (jabScore == highestScore) ExecutePunch(Hand.Right, PunchType.Jab, "JabR");
+        if (uppercutScore == highestScore)
+        {
+            ExecutePunch(Hand.Right, PunchType.Uppercut, "UppercutR");
+            Debug.Log("UPPERCUT SCORE: " + highestScore);
+        }
+        else if (hookScore == highestScore)
+        {
+            ExecutePunch(Hand.Right, PunchType.Hook, "HookR");
+            Debug.Log("HOOK SCORE: " + highestScore);
+        }
+        else if (crossScore == highestScore)
+        {
+            ExecutePunch(Hand.Right, PunchType.Cross, "CrossR");
+            Debug.Log("CROSS SCORE: " + highestScore);
+        }
+        else if (jabScore == highestScore)
+        {
+            ExecutePunch(Hand.Right, PunchType.Jab, "JabR");
+            Debug.Log("JAB SCORE: " + highestScore);
+        }
     }
 
     // execute punch and go into cooldown
