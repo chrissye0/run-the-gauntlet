@@ -323,8 +323,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StartScreen
   riveWidget: {fileID: 0}
-  nextSceneName: Game
-  animationDuration: 1.5
 --- !u!1 &332640936
 GameObject:
   m_ObjectHideFlags: 0
@@ -2535,20 +2533,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 983c7eec1bd7f8146b1aa3f95116154c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ArduinoConnector
-  leftJabAccelX: -3
-  leftCrossAccelX: -3
-  leftCrossGyroX: 800
-  leftHookAccelY: 2
+  udpPort: 5005
+  leftJabAccelX: -2
+  leftCrossAccelX: -1.5
+  leftCrossGyroX: 500
+  leftHookAccelY: 1
   leftHookAccelZ: -2
   leftUppercutAccelY: 2
-  leftUppercutAccelZ: -7
-  rightJabAccelX: -3
-  rightCrossAccelX: -3
-  rightCrossGyroX: 800
-  rightHookAccelY: 2
+  leftUppercutAccelZ: -3
+  rightJabAccelX: -2
+  rightCrossAccelX: -1.5
+  rightCrossGyroX: 500
+  rightHookAccelY: 1
   rightHookAccelZ: -2
   rightUppercutAccelY: 2
-  rightUppercutAccelZ: -7
+  rightUppercutAccelZ: -3
   maxPunchDuration: 0.45
   cooldownDuration: 0.7
   blockAccelX: 2

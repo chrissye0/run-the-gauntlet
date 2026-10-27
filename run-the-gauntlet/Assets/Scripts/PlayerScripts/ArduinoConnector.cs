@@ -1,16 +1,24 @@
 using System;
 using System.IO.Ports;
+using System.Globalization;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
 using UnityEngine;
 
 public class ArduinoConnector : MonoBehaviour
 {
     // WINDOW PORTS
-    private SerialPort leftSerial = new SerialPort("COM5", 115200);
-    private SerialPort rightSerial = new SerialPort("COM6", 115200);
+    //private SerialPort leftSerial = new SerialPort("COM5", 115200);
+    //private SerialPort rightSerial = new SerialPort("COM6", 115200);
 
     // MAC PORTS
     //private SerialPort leftSerial = new SerialPort("/dev/tty.usbmodem14301", 115200);
     //private SerialPort rightSerial = new SerialPort("/dev/cu.usbmodem14201", 115200);
+
+    [Header("UDP Connection")]
+    [SerializeField] private int udpPort = 5005;
+    private UdpClient udpClient;
 
     public enum PunchType
     {
@@ -107,47 +115,25 @@ public class ArduinoConnector : MonoBehaviour
 
     private void Start()
     {
-        leftSerial.Open();
-        rightSerial.Open();
-
-        // fixes serial connection problem
-        leftSerial.DtrEnable = true;
-        rightSerial.DtrEnable = true;
-
-        leftSerial.ReadTimeout = 50;
-        rightSerial.ReadTimeout = 50;
-
         playerCombat = GetComponent<PlayerCombat>();
-
-        Debug.Log("Left serial opened: " + leftSerial.IsOpen);
-        Debug.Log("Right serial opened: " + leftSerial.IsOpen);
+        try
+        {
+            // listen for Python BLE bridge on UDP port 5005
+            udpClient = new UdpClient(udpPort);
+            // don't block Unity's main thread waiting for sensor data
+            udpClient.Client.Blocking = false;
+            Debug.Log($"IMU UDP receiver listening on port {udpPort}");
+        }
+        catch (SocketException ex)
+        {
+            Debug.LogError($"Could not open UDP port {udpPort}: {ex.Message}");
+            enabled = false;
+        }
     }
 
     private void Update()
     {
-        if (leftSerial == null || !leftSerial.IsOpen || rightSerial == null || !rightSerial.IsOpen) return;
-        while (leftSerial.BytesToRead > 0)
-        {
-            try
-            {
-                ProcessSensorData(leftSerial.ReadLine());
-            }
-            catch (TimeoutException)
-            {
-                break;
-            }
-        }
-        while (rightSerial.BytesToRead > 0)
-        {
-            try
-            {
-                ProcessSensorData(rightSerial.ReadLine());
-            }
-            catch (TimeoutException)
-            {
-                break;
-            }
-        }
+        ReceiveImuPackets();
         // check cooldowns
         if (leftState == PunchState.Cooldown)
         {
@@ -177,21 +163,52 @@ public class ArduinoConnector : MonoBehaviour
         }
     }
 
+    private void ReceiveImuPackets()
+    {
+        if (udpClient == null) return;
+        //dDrain every packet currently waiting without blocking Unity
+        while (udpClient.Available > 0)
+        {
+            try
+            {
+                IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
+                byte[] packet = udpClient.Receive(ref remoteEndPoint);
+                string message = Encoding.UTF8.GetString(packet);
+                ProcessSensorData(message);
+            }
+            catch (SocketException ex)
+            {
+                // if no packet is ready
+                if (ex.ErrorCode != 10035) Debug.LogWarning($"UDP receive error: {ex.Message}");
+                break;
+            }
+        }
+    }
+
     private void ProcessSensorData(string line)
     {
         string[] values = line.Trim().Split(',');
-        // if not the right number of values
-        if (values.Length < 8) return;
-        // parse into floats
-        if (!float.TryParse(values[2], out float accelX)) return;
-        if (!float.TryParse(values[3], out float accelY)) return;
-        if (!float.TryParse(values[4], out float accelZ)) return;
-        if (!float.TryParse(values[5], out float gyroX)) return;
-        if (!float.TryParse(values[6], out float gyroY)) return;
-        if (!float.TryParse(values[7], out float gyroZ)) return;
-
-        if (values[0].ToString() == "LEFT") ProcessLeftHand(accelX, accelY, accelZ, gyroX);
-        else if (values[0].ToString() == "RIGHT") ProcessRightHand(accelX, accelY, accelZ, gyroX);
+        // return out if not the right length
+        if (values.Length != 7) return;
+        // parse with invariant culture because of decimal points
+        if (!float.TryParse(values[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float accelX) ||
+            !float.TryParse(values[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float accelY) ||
+            !float.TryParse(values[3], NumberStyles.Float, CultureInfo.InvariantCulture, out float accelZ) ||
+            !float.TryParse(values[4], NumberStyles.Float, CultureInfo.InvariantCulture, out float gyroX) ||
+            !float.TryParse(values[5], NumberStyles.Float, CultureInfo.InvariantCulture, out float gyroY) ||
+            !float.TryParse(values[6], NumberStyles.Float, CultureInfo.InvariantCulture, out float gyroZ)) return;
+        switch (values[0].Trim())
+        {
+            case "L":
+                ProcessLeftHand(accelX, accelY, accelZ, gyroX);
+                break;
+            case "R":
+                ProcessRightHand(accelX, accelY, accelZ, gyroX);
+                break;
+            default:
+                Debug.LogWarning("unknown label");
+                break;
+        }
     }
 
     // process data from left hand
@@ -452,7 +469,10 @@ public class ArduinoConnector : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (leftSerial != null && leftSerial.IsOpen) leftSerial.Close();
-        if (rightSerial != null && rightSerial.IsOpen) rightSerial.Close();
+        if (udpClient != null)
+        {
+            udpClient.Close();
+            udpClient = null;
+        }
     }
 }
