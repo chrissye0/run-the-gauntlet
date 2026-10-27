@@ -319,7 +319,7 @@ public class ArduinoConnector : MonoBehaviour
     private void ProcessRightHand(float accelX, float accelY, float accelZ, float gyroX)
     {
         // return out if in cooldown
-        if (rightState == PunchState.Cooldown || blockCooldownTimer > 0f) return;
+        if (rightState == PunchState.Cooldown || blockCooldownTimer - 1f > 0f) return;
 
         // update the latest blocking sensor value and update blocking state
         latestRightAccelX = accelX;
