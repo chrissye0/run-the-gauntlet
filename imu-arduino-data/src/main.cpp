@@ -108,7 +108,7 @@ void loop()
     };
 
     // send one 12-byte BLE notification
-    bool sent = imuCharacteristic.notify((uint8_t*)values, sizeof(values));
+    imuCharacteristic.notify((uint8_t*)values, sizeof(values));
 
     // print status message over USB serial
     static unsigned long lastStatusTime = 0;
