@@ -1,6 +1,7 @@
 using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
@@ -51,7 +52,8 @@ public class GameManager : MonoBehaviour
         {
             specialMeter.GetComponent<Image>().color = Color.yellow;
             Debug.Log("special ready!");
-        } else
+        }
+        else
         {
             specialMeter.GetComponent<Image>().color = Color.white;
         }
@@ -71,5 +73,11 @@ public class GameManager : MonoBehaviour
         gameOverPanel.transform.Find("ScoreText").GetComponent<TMP_Text>().text = score.ToString();
         gameOverPanel.SetActive(true);
         Time.timeScale = 0f;
+    }
+
+    public void GoHome()
+    {
+        Time.timeScale = 1f; // Reset pause state, if applicable
+        SceneManager.LoadScene("RiveStart");
     }
 }

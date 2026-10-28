@@ -362,7 +362,7 @@ MonoBehaviour:
   m_inputProvider: {fileID: 0}
 --- !u!114 &1548960200
 MonoBehaviour:
-  m_ObjectHideFlags: 0
+  m_ObjectHideFlags: 2
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
@@ -475,7 +475,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Rive.Runtime.Components::Rive.Components.RiveWidget
   m_rivePanel: {fileID: 1548960202}
-  m_asset: {fileID: -4516626237390682484, guid: ac857ea3e01aca8418331f10773c026f, type: 3}
+  m_asset: {fileID: -4516626237390682484, guid: 1bf6150f966cc2f438584f6e5d01481b, type: 3}
   m_artboardName: MAIN
   m_stateMachineName: MainSM
   m_fit: 1

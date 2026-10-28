@@ -14,6 +14,7 @@ public class StartScreen : MonoBehaviour
 
     private void OnEnable()
     {
+        isStarting = false;
         if (riveWidget == null) return;
         riveWidget.OnWidgetStatusChanged += HandleWidgetStatusChanged;
         HandleWidgetStatusChanged();
@@ -22,6 +23,7 @@ public class StartScreen : MonoBehaviour
     private void OnDisable()
     {
         if (riveWidget != null) riveWidget.OnWidgetStatusChanged -= HandleWidgetStatusChanged;
+        startProperty = null;
     }
 
 
@@ -56,12 +58,7 @@ public class StartScreen : MonoBehaviour
 
     private IEnumerator WaitAndLoadScene()
     {
-        yield return new WaitForSeconds(1.5f);
+        yield return new WaitForSecondsRealtime(1.5f);
         SceneManager.LoadScene("Game");
-    }
-
-    public void GoHome()
-    {
-        SceneManager.LoadScene("RiveStart");
     }
 }
