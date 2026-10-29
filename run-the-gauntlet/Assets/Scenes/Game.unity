@@ -2536,7 +2536,7 @@ MonoBehaviour:
   rightUppercutAccelZ: -3
   maxPunchDuration: 0.45
   cooldownDuration: 0.7
-  blockAccelX: 2
+  blockAccelX: 1
   unblockAccelX: -1
   minimumBlockDuration: 1
   blockCooldownDuration: 2
