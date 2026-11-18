@@ -88,7 +88,7 @@ public class PlayerCombat : MonoBehaviour
             // increase special meter by a little
             gameManager.SetSpecialMeterValue(5f);
             // add to score
-            gameManager.score += 50;
+            gameManager.score += 40;
             // if defeated
             if (enemyInfo.enemyHealth == 0)
             {
@@ -96,8 +96,8 @@ public class PlayerCombat : MonoBehaviour
                 enemyInfo.punchCount = 0;
                 // increase special meter more
                 gameManager.SetSpecialMeterValue(15f);
-                // add more to score
-                gameManager.score += 100;
+                // add a little more to score
+                gameManager.score += 10;
                 // destroy target enemy (after death animation plays)
                 StartCoroutine(DestroyAfterDeath(activeEnemy));
             }
@@ -135,7 +135,7 @@ public class PlayerCombat : MonoBehaviour
         foreach (GameObject enemy in inRangeEnemies)
         {
             StartCoroutine(DestroyAfterDeath(enemy));
-            gameManager.score += 100;
+            gameManager.score += 20;
         }
         gameManager.SetSpecialMeterValue(-100f);
         Debug.Log("SPECIAL ATTACK!");
