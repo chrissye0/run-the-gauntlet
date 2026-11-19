@@ -46,11 +46,14 @@ public class GameManager : MonoBehaviour
     {
         specialMeterValue += value;
         specialMeterValue = Mathf.Clamp(specialMeterValue, 0f, 100f);
-        specialMeter.sizeDelta = new Vector2((specialMeterValue / 100f) * width, height);
+        specialMeter.sizeDelta = new Vector2(width, (specialMeterValue / 100f) * height);
         // do something here to indicate special
         if (specialMeterValue == 100)
         {
-            specialMeter.GetComponent<Image>().color = Color.yellow;
+            if (ColorUtility.TryParseHtmlString("#E3C0FF", out Color newColor))
+            {
+                specialMeter.GetComponent<Image>().color = newColor;
+            }
             Debug.Log("special ready!");
         }
         else
